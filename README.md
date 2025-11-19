@@ -138,7 +138,7 @@ For detailed architecture documentation, see [Architecture Overview](docs/archit
 cd SchoolRecordManager
 
 # OR clone from repository (if available)
-git clone [(https://github.com/Aymenchaghoub/school-record-manager SchoolRecordManager
+git clone https://github.com/Aymenchaghoub/school-record-manager SchoolRecordManager
 cd SchoolRecordManager
 ```
 
