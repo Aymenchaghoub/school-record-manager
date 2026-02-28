@@ -42,7 +42,9 @@ class ClassModel extends Model
      */
     public function getTeacherIdAttribute()
     {
-        return $this->attributes['responsible_teacher_id'] ?? null;
+        return isset($this->attributes['responsible_teacher_id'])
+            ? (int) $this->attributes['responsible_teacher_id']
+            : null;
     }
 
     /**

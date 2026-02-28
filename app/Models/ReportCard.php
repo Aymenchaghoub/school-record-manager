@@ -55,6 +55,14 @@ class ReportCard extends Model
     }
 
     /**
+     * Get the user who prepared the report card
+     */
+    public function preparedBy()
+    {
+        return $this->belongsTo(User::class, 'prepared_by');
+    }
+
+    /**
      * Generate report card for a student
      */
     public static function generate($studentId, $classId, $term, $academicYear)
@@ -112,7 +120,6 @@ class ReportCard extends Model
         // Calculate absences
         $absences = Absence::where('student_id', $studentId)
             ->where('class_id', $classId)
-            ->whereYear('absence_date', substr($academicYear, 0, 4))
             ->get();
 
         $totalAbsences = $absences->count();
@@ -141,10 +148,10 @@ class ReportCard extends Model
             $conductGrade = 'Excellent';
         } elseif ($totalAbsences - $justifiedAbsences <= 5 && $overallAverage >= 75) {
             $conductGrade = 'Very Good';
-        } elseif ($totalAbsences - $justifiedAbsences > 10 || $overallAverage < 50) {
-            $conductGrade = 'Fair';
         } elseif ($totalAbsences - $justifiedAbsences > 15 || $overallAverage < 40) {
             $conductGrade = 'Poor';
+        } elseif ($totalAbsences - $justifiedAbsences > 10 || $overallAverage < 50) {
+            $conductGrade = 'Fair';
         }
 
         return self::updateOrCreate(

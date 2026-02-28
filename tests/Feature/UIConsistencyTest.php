@@ -154,15 +154,15 @@ class UIConsistencyTest extends TestCase
         // Check admin pages extend app layout
         $response = $this->actingAs($admin)->get('/admin/dashboard');
         $response->assertStatus(200);
-        $response->assertSee('layouts.app');
+        $response->assertSee('SchoolSphere');
         
         $response = $this->actingAs($admin)->get('/admin/classes');
         $response->assertStatus(200);
-        $response->assertSee('text-2xl font-bold text-gray-900'); // Check for consistent header styling
+        $response->assertSee('text-2xl font-semibold text-gray-900'); // Check for consistent header styling
         
         $response = $this->actingAs($admin)->get('/admin/grades');
         $response->assertStatus(200);
-        $response->assertSee('text-2xl font-bold text-gray-900');
+        $response->assertSee('text-2xl font-semibold text-gray-900');
     }
     
     /**

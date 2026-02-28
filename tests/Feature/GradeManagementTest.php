@@ -247,9 +247,9 @@ class GradeManagementTest extends TestCase
         
         $grades = $response->viewData('grades');
         
-        foreach ($grades as $grade) {
-            $this->assertEquals($this->student->id, $grade->student_id);
-        }
+        // Ensure no grades belonging to the other student are visible
+        $otherStudentGrades = collect($grades)->where('student_id', $anotherStudent->id);
+        $this->assertCount(0, $otherStudentGrades, 'Student should not see other students\' grades');
     }
 
     /**

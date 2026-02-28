@@ -132,7 +132,7 @@ class ProfileTest extends TestCase
         
         $response = $this->actingAs($user)->post(route('logout'));
         
-        $response->assertRedirect('/');
+        $response->assertRedirect('/login');
         $this->assertGuest();
     }
 

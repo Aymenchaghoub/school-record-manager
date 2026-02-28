@@ -22,7 +22,7 @@ class ClassModelFactory extends Factory
         
         return [
             'name' => "$level - Section $section",
-            'code' => str_replace(' ', '', $level) . $section,
+            'code' => str_replace(' ', '', $level) . $section . '-' . fake()->unique()->numerify('###'),
             'level' => $level,
             'section' => $section,
             'academic_year' => fake()->randomElement(['2023-2024', '2024-2025']),

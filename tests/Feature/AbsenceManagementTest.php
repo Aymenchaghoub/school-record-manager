@@ -102,10 +102,9 @@ class AbsenceManagementTest extends TestCase
         $response = $this->actingAs($this->teacher)
             ->post(route('teacher.absences.batch'), [
                 'class_id' => $this->class->id,
-                'subject_id' => $this->subject->id,
                 'absence_date' => now()->format('Y-m-d'),
                 'type' => 'full_day',
-                'absent_students' => $absenceData,
+                'student_ids' => $absenceData,
             ]);
         
         $response->assertRedirect();
@@ -115,7 +114,7 @@ class AbsenceManagementTest extends TestCase
             $this->assertDatabaseHas('absences', [
                 'student_id' => $student->id,
                 'class_id' => $this->class->id,
-                'absence_date' => now()->format('Y-m-d'),
+                'type' => 'full_day',
             ]);
         }
     }

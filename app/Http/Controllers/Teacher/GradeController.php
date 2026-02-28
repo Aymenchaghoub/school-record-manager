@@ -64,10 +64,13 @@ class GradeController extends Controller
             'student_id' => 'required|exists:users,id',
             'subject_id' => 'required|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
-            'exam_type' => 'required|string|max:255',
-            'grade' => 'required|numeric|min:0|max:100',
-            'semester' => 'required|integer|min:1|max:2',
-            'academic_year' => 'required|string|max:255',
+            'type' => 'required|in:exam,quiz,assignment,project,participation,midterm,final',
+            'value' => 'required|numeric|min:0|lte:max_value',
+            'max_value' => 'required|numeric|min:1',
+            'title' => 'nullable|string|max:255',
+            'grade_date' => 'required|date',
+            'term' => 'nullable|string|max:255',
+            'weight' => 'sometimes|numeric|min:0',
             'comment' => 'nullable|string'
         ]);
 
@@ -108,8 +111,7 @@ class GradeController extends Controller
         }
 
         $validated = $request->validate([
-            'exam_type' => 'required|string|max:255',
-            'grade' => 'required|numeric|min:0|max:100',
+            'value' => 'sometimes|required|numeric|min:0',
             'comment' => 'nullable|string'
         ]);
 
@@ -139,12 +141,15 @@ class GradeController extends Controller
         $validated = $request->validate([
             'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
-            'exam_type' => 'required|string|max:255',
-            'semester' => 'required|integer|min:1|max:2',
-            'academic_year' => 'required|string|max:255',
+            'type' => 'required|in:exam,quiz,assignment,project,participation,midterm,final',
+            'title' => 'nullable|string|max:255',
+            'grade_date' => 'required|date',
+            'term' => 'nullable|string|max:255',
+            'weight' => 'sometimes|numeric|min:0',
             'grades' => 'required|array',
             'grades.*.student_id' => 'required|exists:users,id',
-            'grades.*.grade' => 'required|numeric|min:0|max:100',
+            'grades.*.value' => 'required|numeric|min:0',
+            'grades.*.max_value' => 'sometimes|numeric|min:1',
             'grades.*.comment' => 'nullable|string'
         ]);
 
@@ -154,10 +159,13 @@ class GradeController extends Controller
                 'subject_id' => $validated['subject_id'],
                 'class_id' => $validated['class_id'],
                 'teacher_id' => Auth::id(),
-                'exam_type' => $validated['exam_type'],
-                'grade' => $gradeData['grade'],
-                'semester' => $validated['semester'],
-                'academic_year' => $validated['academic_year'],
+                'type' => $validated['type'],
+                'value' => $gradeData['value'],
+                'max_value' => $gradeData['max_value'] ?? 100,
+                'title' => $validated['title'] ?? null,
+                'grade_date' => $validated['grade_date'] ?? now(),
+                'term' => $validated['term'] ?? null,
+                'weight' => $validated['weight'] ?? 1,
                 'comment' => $gradeData['comment'] ?? null
             ]);
         }

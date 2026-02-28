@@ -62,13 +62,16 @@ class AbsenceController extends Controller
         $validated = $request->validate([
             'student_id' => 'required|exists:users,id',
             'class_id' => 'required|exists:classes,id',
+            'subject_id' => 'nullable|exists:subjects,id',
             'absence_date' => 'required|date',
-            'period' => 'required|string|max:255',
+            'type' => 'required|in:full_day,partial,late_arrival,early_departure',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
             'reason' => 'nullable|string',
             'is_justified' => 'boolean'
         ]);
 
-        $validated['marked_by'] = Auth::id();
+        $validated['recorded_by'] = Auth::id();
         Absence::create($validated);
 
         return redirect()->route('teacher.absences.index')
@@ -80,7 +83,7 @@ class AbsenceController extends Controller
         $validated = $request->validate([
             'class_id' => 'required|exists:classes,id',
             'absence_date' => 'required|date',
-            'period' => 'required|string|max:255',
+            'type' => 'required|in:full_day,partial,late_arrival,early_departure',
             'student_ids' => 'required|array',
             'student_ids.*' => 'exists:users,id'
         ]);
@@ -90,8 +93,8 @@ class AbsenceController extends Controller
                 'student_id' => $studentId,
                 'class_id' => $validated['class_id'],
                 'absence_date' => $validated['absence_date'],
-                'period' => $validated['period'],
-                'marked_by' => Auth::id(),
+                'type' => $validated['type'],
+                'recorded_by' => Auth::id(),
                 'is_justified' => false
             ]);
         }

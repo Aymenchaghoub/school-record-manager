@@ -117,6 +117,9 @@ class Absence extends Model
      */
     public function scopeWeekdaysOnly($query)
     {
+        if ($query->getConnection()->getDriverName() === 'sqlite') {
+            return $query->whereRaw("strftime('%w', absence_date) NOT IN ('0', '6')");
+        }
         return $query->whereRaw('DAYOFWEEK(absence_date) NOT IN (1, 7)'); // 1=Sunday, 7=Saturday
     }
 
@@ -140,7 +143,7 @@ class Absence extends Model
         if ($this->start_time && $this->end_time) {
             $start = \Carbon\Carbon::parse($this->start_time);
             $end = \Carbon\Carbon::parse($this->end_time);
-            return round($end->diffInMinutes($start) / 60, 2);
+            return round(abs($end->diffInMinutes($start)) / 60, 2);
         }
 
         return 0;
