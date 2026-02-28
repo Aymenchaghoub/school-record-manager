@@ -40,7 +40,7 @@ class UserFlowsTest extends TestCase
             'gender' => 'female'
         ];
         
-        $response = $this->actingAs($admin)->post(route('register'), $userData);
+        $response = $this->actingAs($admin)->post(route('admin.users.store'), $userData);
         
         $response->assertRedirect(route('admin.users.index'));
         $response->assertSessionHas('success');
@@ -72,7 +72,7 @@ class UserFlowsTest extends TestCase
     {
         $teacher = User::where('email', 'teacher@school.com')->first();
         
-        $response = $this->actingAs($teacher)->get(route('teacher.grades'));
+        $response = $this->actingAs($teacher)->get(route('teacher.grades.index'));
         
         $response->assertStatus(200);
     }
@@ -97,7 +97,7 @@ class UserFlowsTest extends TestCase
     {
         $student = User::where('email', 'student@school.com')->first();
         
-        $response = $this->actingAs($student)->get(route('student.grades'));
+        $response = $this->actingAs($student)->get(route('student.grades.index'));
         
         $response->assertStatus(200);
     }
