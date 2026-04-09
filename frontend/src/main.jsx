@@ -4,6 +4,7 @@ import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { LoadingProvider } from './context/LoadingContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
+import './utils/chartSetup.js';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
