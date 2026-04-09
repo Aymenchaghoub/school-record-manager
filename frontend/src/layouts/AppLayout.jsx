@@ -9,21 +9,21 @@ export function AppLayout() {
   const { user, role, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="app-shell min-h-screen">
       <Sidebar
         role={role || user?.role}
         isOpen={sidebarOpen}
         onNavigate={() => setSidebarOpen(false)}
       />
 
-      <div className="lg:pl-72">
+      <div className="md:pl-72">
         <TopBar
           user={user}
           onLogout={logout}
           onToggleSidebar={() => setSidebarOpen((open) => !open)}
         />
 
-        <main className="px-4 py-6 lg:px-8">
+        <main className="px-4 py-6 lg:px-8" style={{ color: 'var(--fg)' }}>
           <Outlet />
         </main>
       </div>
@@ -33,7 +33,7 @@ export function AppLayout() {
           type="button"
           aria-label="Close sidebar overlay"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/40 md:hidden"
         />
       ) : null}
     </div>
