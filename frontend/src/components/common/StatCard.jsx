@@ -9,8 +9,10 @@ export function StatCard({ label, value, accent = 'cyan' }) {
   return (
     <div className="surface-card p-4">
       <div className={`mb-3 h-2 w-20 rounded-full bg-gradient-to-r ${accents[accent]}`} />
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
+      <p className="theme-muted text-sm font-medium">{label}</p>
+      <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--fg)' }}>
+        {value}
+      </p>
     </div>
   );
 }
