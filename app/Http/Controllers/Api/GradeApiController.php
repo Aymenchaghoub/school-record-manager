@@ -4,26 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Grades\StoreGradeRequest;
+use App\Http\Requests\Api\Grades\UpdateGradeRequest;
 use App\Models\Grade;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class GradeApiController extends Controller
 {
     use ApiResponse;
-
-    private const TYPES = [
-        'exam',
-        'quiz',
-        'assignment',
-        'project',
-        'participation',
-        'midterm',
-        'final',
-    ];
 
     public function index(Request $request): JsonResponse
     {
@@ -58,13 +49,13 @@ class GradeApiController extends Controller
         return $this->paginated($query->paginate($perPage)->withQueryString(), 'Grades fetched successfully.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreGradeRequest $request): JsonResponse
     {
         if (! $this->canMutate($request->user())) {
             return $this->error('You are not allowed to create grades.', [], 403);
         }
 
-        $validated = $this->validatePayload($request);
+        $validated = $request->validated();
         $payload = $this->normalizePayload($validated, $request->user(), false);
 
         $grade = Grade::create($payload);
@@ -87,7 +78,7 @@ class GradeApiController extends Controller
         return $this->success($grade, 'Grade fetched successfully.');
     }
 
-    public function update(Request $request, Grade $grade): JsonResponse
+    public function update(UpdateGradeRequest $request, Grade $grade): JsonResponse
     {
         if (! $this->canMutate($request->user())) {
             return $this->error('You are not allowed to update grades.', [], 403);
@@ -99,7 +90,7 @@ class GradeApiController extends Controller
             return $this->error('Grade not found.', [], 404);
         }
 
-        $validated = $this->validatePayload($request, true);
+        $validated = $request->validated();
         $payload = $this->normalizePayload($validated, $request->user(), true);
 
         $ownedGrade->update($payload);
@@ -177,26 +168,6 @@ class GradeApiController extends Controller
     private function canMutate(User $user): bool
     {
         return $user->isAdmin() || $user->isTeacher();
-    }
-
-    private function validatePayload(Request $request, bool $isUpdate = false): array
-    {
-        $required = $isUpdate ? 'sometimes' : 'required';
-
-        return $request->validate([
-            'student_id' => [$required, 'integer', 'exists:users,id'],
-            'subject_id' => [$required, 'integer', 'exists:subjects,id'],
-            'class_id' => [$required, 'integer', 'exists:classes,id'],
-            'teacher_id' => ['nullable', 'integer', 'exists:users,id'],
-            'value' => [$required, 'numeric', 'min:0'],
-            'max_value' => ['nullable', 'numeric', 'gt:0'],
-            'type' => [$required, Rule::in(self::TYPES)],
-            'title' => ['nullable', 'string', 'max:255'],
-            'grade_date' => [$required, 'date'],
-            'term' => ['nullable', 'string', 'max:100'],
-            'weight' => ['nullable', 'numeric', 'gt:0'],
-            'comment' => ['nullable', 'string'],
-        ]);
     }
 
     private function normalizePayload(array $validated, User $user, bool $isUpdate): array
