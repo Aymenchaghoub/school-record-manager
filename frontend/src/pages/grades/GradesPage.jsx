@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
@@ -18,6 +18,9 @@ const gradeTypeOptions = [
 export function GradesPage() {
   const { user } = useAuth();
   const role = user?.role;
+  const [subjectOptions, setSubjectOptions] = useState([
+    { value: '', label: 'All subjects' },
+  ]);
 
   const service = useMemo(
     () => createGradesService(role || ROLES.ADMIN),
@@ -25,6 +28,35 @@ export function GradesPage() {
   );
 
   const canMutate = role === ROLES.ADMIN || role === ROLES.TEACHER;
+
+  const gradeFilters = useMemo(
+    () => [
+      {
+        name: 'subject',
+        label: 'Subject',
+        options: subjectOptions,
+        defaultValue: '',
+      },
+    ],
+    [subjectOptions]
+  );
+
+  const handleListLoaded = useCallback((listPayload) => {
+    const subjects = Array.isArray(listPayload?.subjects) ? listPayload.subjects : [];
+    const nextOptions = [
+      { value: '', label: 'All subjects' },
+      ...subjects.map((subjectName) => ({
+        value: subjectName,
+        label: subjectName,
+      })),
+    ];
+
+    setSubjectOptions((currentOptions) => {
+      const currentSignature = JSON.stringify(currentOptions);
+      const nextSignature = JSON.stringify(nextOptions);
+      return currentSignature === nextSignature ? currentOptions : nextOptions;
+    });
+  }, []);
 
   return (
     <CrudPage
@@ -35,6 +67,8 @@ export function GradesPage() {
       canCreate={canMutate}
       canEdit={canMutate}
       canDelete={canMutate}
+      filters={gradeFilters}
+      onListLoaded={handleListLoaded}
       columns={[
         {
           key: 'student_name',
@@ -94,6 +128,11 @@ export function GradesPage() {
         max_value: Number(values.max_value || 100),
         weight: Number(values.weight || 1),
       })}
+      emptyState={{
+        title: 'No grades recorded',
+        description: 'Capture student performance to keep academic tracking up to date.',
+        actionLabel: 'Add a grade',
+      }}
     />
   );
 }
