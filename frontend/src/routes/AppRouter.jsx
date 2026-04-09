@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { ProtectedRoute } from '../components/common/ProtectedRoute';
+import { PrivateRoute } from '../components/common/PrivateRoute';
 import { AppLayout } from '../layouts/AppLayout';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { UnauthorizedPage } from '../pages/UnauthorizedPage';
@@ -19,9 +19,10 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/403" element={<UnauthorizedPage />} />
+        <Route path="/unauthorized" element={<Navigate to="/403" replace />} />
 
-        <Route element={<ProtectedRoute />}>
+        <Route element={<PrivateRoute />}>
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -29,63 +30,63 @@ export function AppRouter() {
             <Route
               path="/users"
               element={
-                <ProtectedRoute roles={[ROLES.ADMIN]}>
+                <PrivateRoute roles={[ROLES.ADMIN]}>
                   <UsersPage />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
 
             <Route
               path="/classes"
               element={
-                <ProtectedRoute roles={[ROLES.ADMIN, ROLES.TEACHER]}>
+                <PrivateRoute roles={[ROLES.ADMIN]}>
                   <ClassesPage />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
 
             <Route
               path="/subjects"
               element={
-                <ProtectedRoute roles={[ROLES.ADMIN, ROLES.TEACHER]}>
+                <PrivateRoute roles={[ROLES.ADMIN]}>
                   <SubjectsPage />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
 
             <Route
               path="/grades"
               element={
-                <ProtectedRoute roles={[ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]}>
+                <PrivateRoute roles={[ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]}>
                   <GradesPage />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
 
             <Route
               path="/absences"
               element={
-                <ProtectedRoute roles={[ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]}>
+                <PrivateRoute roles={[ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]}>
                   <AbsencesPage />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
 
             <Route
               path="/report-cards"
               element={
-                <ProtectedRoute roles={[ROLES.ADMIN, ROLES.STUDENT, ROLES.PARENT]}>
+                <PrivateRoute roles={[ROLES.ADMIN]}>
                   <ReportCardsPage />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
 
             <Route
               path="/events"
               element={
-                <ProtectedRoute roles={[ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]}>
+                <PrivateRoute roles={[ROLES.ADMIN]}>
                   <EventsPage />
-                </ProtectedRoute>
+                </PrivateRoute>
               }
             />
           </Route>
