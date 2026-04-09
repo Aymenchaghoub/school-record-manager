@@ -19,7 +19,7 @@ class GradeApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $search = trim((string) $request->input('search', ''));
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $subject = trim((string) $request->input('subject', ''));
 
         $query = Grade::query()
             ->with([
@@ -46,7 +46,30 @@ class GradeApiController extends Controller
             });
         }
 
-        return $this->paginated($query->paginate($perPage)->withQueryString(), 'Grades fetched successfully.');
+        if ($subject !== '') {
+            $query->whereHas('subject', function ($subjectQuery) use ($subject) {
+                $subjectQuery->where('name', $subject);
+            });
+        }
+
+        $subjectOptionsQuery = Grade::query()
+            ->join('subjects', 'grades.subject_id', '=', 'subjects.id')
+            ->select('subjects.name')
+            ->distinct()
+            ->orderBy('subjects.name');
+
+        $this->applyRoleScope($subjectOptionsQuery, $request->user());
+
+        $subjects = $subjectOptionsQuery
+            ->pluck('subjects.name')
+            ->filter()
+            ->values();
+
+        return $this->paginated(
+            $query->paginate(10)->withQueryString(),
+            'Grades fetched successfully.',
+            ['subjects' => $subjects]
+        );
     }
 
     public function store(StoreGradeRequest $request): JsonResponse
