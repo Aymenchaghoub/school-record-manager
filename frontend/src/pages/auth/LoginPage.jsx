@@ -32,7 +32,13 @@ export function LoginPage() {
       const nextPath = location.state?.from?.pathname || '/dashboard';
       navigate(nextPath, { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.message || 'Echec de connexion.');
+      const backendMessage = err?.response?.data?.message;
+      const validationErrors = err?.response?.data?.errors;
+      const firstValidationError = validationErrors
+        ? Object.values(validationErrors).flat()[0]
+        : '';
+
+      setError(backendMessage || firstValidationError || 'Echec de connexion.');
     } finally {
       setIsSubmitting(false);
     }
