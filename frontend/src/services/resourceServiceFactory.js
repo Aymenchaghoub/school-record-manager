@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, ROLES } from '../utils/constants';
+import { API_ENDPOINTS } from '../utils/constants';
 import { createCrudService } from './crudService';
 
 function resolveEndpoint(resourceKey, role) {
@@ -8,12 +8,13 @@ function resolveEndpoint(resourceKey, role) {
     throw new Error(`Unknown resource key: ${resourceKey}`);
   }
 
-  return (
-    resourceMap[role] ||
-    resourceMap.default ||
-    resourceMap[ROLES.ADMIN] ||
-    Object.values(resourceMap)[0]
-  );
+  const endpoint = resourceMap[role] || resourceMap.default;
+
+  if (!endpoint) {
+    throw new Error(`No endpoint configured for resource ${resourceKey} and role ${role}`);
+  }
+
+  return endpoint;
 }
 
 export function getResourceService(resourceKey, role) {
