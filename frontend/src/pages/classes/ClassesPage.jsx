@@ -61,6 +61,13 @@ export function ClassesPage() {
           : null,
         is_active: Boolean(values.is_active),
       })}
+      searchPlaceholder="Search classes by name..."
+      searchDebounceMs={300}
+      emptyState={{
+        title: 'No classes yet',
+        description: 'Create a class to organize students and schedule activities.',
+        actionLabel: 'Create a class',
+      }}
     />
   );
 }
