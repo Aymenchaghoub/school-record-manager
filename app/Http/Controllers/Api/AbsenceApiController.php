@@ -19,7 +19,8 @@ class AbsenceApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $search = trim((string) $request->input('search', ''));
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $month = (int) $request->input('month', 0);
+        $year = (int) $request->input('year', 0);
 
         $query = Absence::query()
             ->with([
@@ -45,7 +46,15 @@ class AbsenceApiController extends Controller
             });
         }
 
-        return $this->paginated($query->paginate($perPage)->withQueryString(), 'Absences fetched successfully.');
+        if ($month >= 1 && $month <= 12) {
+            $query->whereMonth('absence_date', $month);
+        }
+
+        if ($year >= 1900) {
+            $query->whereYear('absence_date', $year);
+        }
+
+        return $this->paginated($query->paginate(10)->withQueryString(), 'Absences fetched successfully.');
     }
 
     public function store(StoreAbsenceRequest $request): JsonResponse
