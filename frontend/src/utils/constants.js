@@ -8,7 +8,8 @@ export const ROLES = {
 };
 
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'srm.auth.token',
+  AUTH_USER: 'srm.auth.user',
+  AUTH_ROLE: 'srm.auth.role',
 };
 
 export const ROLE_LABELS = {
@@ -31,24 +32,18 @@ export const NAV_ITEMS_BY_ROLE = {
   ],
   [ROLES.TEACHER]: [
     { to: '/dashboard', label: 'Dashboard' },
-    { to: '/classes', label: 'Mes classes' },
     { to: '/grades', label: 'Notes' },
     { to: '/absences', label: 'Absences' },
-    { to: '/events', label: 'Evenements' },
   ],
   [ROLES.STUDENT]: [
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/grades', label: 'Mes notes' },
     { to: '/absences', label: 'Mes absences' },
-    { to: '/report-cards', label: 'Mes bulletins' },
-    { to: '/events', label: 'Evenements' },
   ],
   [ROLES.PARENT]: [
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/grades', label: 'Notes enfants' },
     { to: '/absences', label: 'Absences enfants' },
-    { to: '/report-cards', label: 'Bulletins enfants' },
-    { to: '/events', label: 'Evenements' },
   ],
 };
 
@@ -71,11 +66,9 @@ export const API_ENDPOINTS = {
     },
     classes: {
       [ROLES.ADMIN]: '/api/admin/classes',
-      [ROLES.TEACHER]: '/api/teacher/classes',
     },
     subjects: {
       [ROLES.ADMIN]: '/api/admin/subjects',
-      [ROLES.TEACHER]: '/api/teacher/subjects',
     },
     grades: {
       [ROLES.ADMIN]: '/api/admin/grades',
@@ -91,14 +84,9 @@ export const API_ENDPOINTS = {
     },
     reportCards: {
       [ROLES.ADMIN]: '/api/admin/report-cards',
-      [ROLES.STUDENT]: '/api/student/report-cards',
-      [ROLES.PARENT]: '/api/parent/children/report-cards',
     },
     events: {
       [ROLES.ADMIN]: '/api/admin/events',
-      [ROLES.TEACHER]: '/api/teacher/events',
-      [ROLES.STUDENT]: '/api/student/events',
-      [ROLES.PARENT]: '/api/parent/events',
     },
   },
 };
