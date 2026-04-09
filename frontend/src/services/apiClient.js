@@ -1,23 +1,16 @@
 import axios from 'axios';
-import { getAuthToken } from '../utils/storage';
+
+axios.defaults.withCredentials = true;
+axios.defaults.withXSRFToken = true;
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   withCredentials: true,
+  withXSRFToken: true,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-});
-
-apiClient.interceptors.request.use((config) => {
-  const token = getAuthToken();
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
 });
 
 apiClient.interceptors.response.use(
