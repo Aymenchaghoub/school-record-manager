@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Users\StoreUserRequest;
+use App\Http\Requests\Api\Users\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class UserApiController extends Controller
 {
@@ -31,19 +32,9 @@ class UserApiController extends Controller
         return $this->paginated($query->paginate($perPage)->withQueryString(), 'Users fetched successfully.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', Rule::in(['admin', 'teacher', 'student', 'parent'])],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'date_of_birth' => ['nullable', 'date'],
-            'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
-            'address' => ['nullable', 'string'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
         $user = User::create($validated);
 
@@ -55,21 +46,11 @@ class UserApiController extends Controller
         return $this->success($user, 'User fetched successfully.');
     }
 
-    public function update(Request $request, User $user): JsonResponse
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['sometimes', 'required', Rule::in(['admin', 'teacher', 'student', 'parent'])],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'date_of_birth' => ['nullable', 'date'],
-            'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
-            'address' => ['nullable', 'string'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
-        if (empty($validated['password'])) {
+        if (array_key_exists('password', $validated) && empty($validated['password'])) {
             unset($validated['password']);
         }
 
