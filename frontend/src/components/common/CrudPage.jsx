@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useDebounce } from '../../hooks/useDebounce';
 import { parseListResponse } from '../../utils/response';
 import { formatDate, formatDateTime, toBoolean } from '../../utils/format';
 import { Alert } from '../ui/Alert';
@@ -9,7 +11,23 @@ import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
 import { Spinner } from '../ui/Spinner';
 import { Textarea } from '../ui/Textarea';
+import { ConfirmModal } from './ConfirmModal';
+import { EmptyState } from './EmptyState';
+import { Pagination } from './Pagination';
 import { PageHeader } from './PageHeader';
+
+function buildInitialFilterValues(filters) {
+  return filters.reduce((acc, filter) => {
+    acc[filter.name] = filter.defaultValue ?? '';
+    return acc;
+  }, {});
+}
+
+function compactParams(params) {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+  );
+}
 
 function buildEmptyValues(fields) {
   return fields.reduce((acc, field) => {
@@ -56,6 +74,13 @@ export function CrudPage({
   createLabel = 'Nouveau',
   mapItemToForm,
   mapFormToPayload,
+  emptyState,
+  searchEnabled = true,
+  searchPlaceholder = 'Recherche...',
+  searchDebounceMs = 0,
+  filters = [],
+  buildListParams,
+  onListLoaded,
 }) {
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
@@ -63,12 +88,25 @@ export function CrudPage({
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [search, setSearch] = useState('');
+  const [filterValues, setFilterValues] = useState(() => buildInitialFilterValues(filters));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formValues, setFormValues] = useState(buildEmptyValues(fields));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const effectiveSearch = searchDebounceMs > 0 ? useDebounce(search, searchDebounceMs) : search;
 
   const modalTitle = editingItem ? `Modifier ${title}` : `Creer ${title}`;
+
+  const handleFilterChange = (name, value) => {
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
+    setFilterValues((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const loadItems = useMemo(
     () => async () => {
@@ -76,8 +114,28 @@ export function CrudPage({
       setError('');
 
       try {
-        const payload = await service.list({ search, page: pagination.currentPage });
-        const parsed = parseListResponse(payload?.data || payload);
+        const cleanSearch = String(effectiveSearch || '').trim();
+        const defaultParams = {
+          page: pagination.currentPage,
+          ...(searchEnabled ? { search: cleanSearch } : {}),
+          ...filterValues,
+        };
+
+        const params = compactParams(
+          buildListParams
+            ? buildListParams({
+              search: cleanSearch,
+              page: pagination.currentPage,
+              filters: filterValues,
+            })
+            : defaultParams
+        );
+
+        const payload = await service.list(params);
+        const listPayload = payload?.data || payload;
+        onListLoaded?.(listPayload);
+
+        const parsed = parseListResponse(listPayload);
         setItems(parsed.items);
         setPagination(parsed.pagination);
       } catch (err) {
@@ -86,7 +144,15 @@ export function CrudPage({
         setIsLoading(false);
       }
     },
-    [service, search, pagination.currentPage]
+    [
+      service,
+      effectiveSearch,
+      searchEnabled,
+      pagination.currentPage,
+      filterValues,
+      buildListParams,
+      onListLoaded,
+    ]
   );
 
   useEffect(() => {
@@ -138,6 +204,10 @@ export function CrudPage({
     setError('');
     setSuccessMessage('');
 
+    const loadingToastId = toast.loading(
+      editingItem ? 'Updating record...' : 'Creating record...'
+    );
+
     try {
       const payload = mapFormToPayload ? mapFormToPayload(formValues) : formValues;
 
@@ -154,25 +224,44 @@ export function CrudPage({
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Erreur pendant la sauvegarde');
     } finally {
+      toast.dismiss(loadingToastId);
       setIsSubmitting(false);
     }
   };
 
-  const removeItem = async (item) => {
-    const confirmed = window.confirm('Confirmer la suppression ?');
+  const openDeleteConfirm = (itemId) => {
+    setDeleteTargetId(itemId);
+    setIsConfirmOpen(true);
+  };
 
-    if (!confirmed) {
+  const closeDeleteConfirm = () => {
+    if (isDeleting) {
+      return;
+    }
+
+    setIsConfirmOpen(false);
+    setDeleteTargetId(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) {
+      closeDeleteConfirm();
       return;
     }
 
     try {
+      setIsDeleting(true);
       setError('');
       setSuccessMessage('');
-      await service.remove(item[idKey]);
+      await service.remove(deleteTargetId);
       setSuccessMessage('Suppression effectuee avec succes.');
+      setIsConfirmOpen(false);
+      setDeleteTargetId(null);
       await loadItems();
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Suppression impossible');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -192,19 +281,37 @@ export function CrudPage({
 
       <div className="surface-card p-4">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <Input
-            placeholder="Recherche..."
-            value={search}
-            onChange={(event) => {
-              setPagination((prev) => ({ ...prev, currentPage: 1 }));
-              setSearch(event.target.value);
-            }}
-            className="md:max-w-sm"
-          />
+          {searchEnabled ? (
+            <Input
+              placeholder={searchPlaceholder}
+              value={search}
+              onChange={(event) => {
+                setPagination((prev) => ({ ...prev, currentPage: 1 }));
+                setSearch(event.target.value);
+              }}
+              className="md:max-w-sm"
+            />
+          ) : (
+            <div />
+          )}
           <Button variant="secondary" onClick={loadItems}>
             Rafraichir
           </Button>
         </div>
+
+        {filters.length > 0 ? (
+          <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filters.map((filter) => (
+              <Select
+                key={filter.name}
+                label={filter.label}
+                value={filterValues[filter.name] ?? ''}
+                onChange={(event) => handleFilterChange(filter.name, event.target.value)}
+                options={filter.options || []}
+              />
+            ))}
+          </div>
+        ) : null}
 
         {error ? <Alert variant="danger">{error}</Alert> : null}
         {successMessage ? <Alert variant="success">{successMessage}</Alert> : null}
@@ -213,11 +320,21 @@ export function CrudPage({
           <div className="py-6">
             <Spinner label="Chargement des donnees..." />
           </div>
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={emptyState?.icon}
+            title={emptyState?.title || 'No results found'}
+            description={
+              emptyState?.description || 'Try adjusting your search or create a new record.'
+            }
+            actionLabel={canCreate ? emptyState?.actionLabel : undefined}
+            onAction={canCreate ? (emptyState?.onAction || openCreateModal) : undefined}
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className="theme-table min-w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500">
+                <tr className="border-b">
                   {columns.map((column) => (
                     <th key={column.key} className="px-3 py-2 font-semibold">
                       {column.label}
@@ -227,71 +344,51 @@ export function CrudPage({
                 </tr>
               </thead>
               <tbody>
-                {items.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={columns.length + 1}
-                      className="px-3 py-5 text-center text-slate-500"
-                    >
-                      Aucun resultat
-                    </td>
-                  </tr>
-                ) : (
-                  items.map((item) => (
-                    <tr key={item[idKey]} className="border-b border-slate-100">
-                      {columns.map((column) => (
-                        <td key={column.key} className="px-3 py-3 align-top text-slate-700">
-                          {column.render
-                            ? column.render(item)
-                            : formatCellValue(item[column.key], column.format)}
-                        </td>
-                      ))}
+                {items.map((item) => (
+                  <tr key={item[idKey]} className="border-b">
+                    {columns.map((column) => (
+                      <td key={column.key} className="px-3 py-3 align-top">
+                        {column.render
+                          ? column.render(item)
+                          : formatCellValue(item[column.key], column.format)}
+                      </td>
+                    ))}
 
-                      {(canEdit || canDelete) ? (
-                        <td className="px-3 py-3">
-                          <div className="flex gap-2">
-                            {canEdit ? (
-                              <Button variant="subtle" onClick={() => openEditModal(item)}>
-                                Editer
-                              </Button>
-                            ) : null}
-                            {canDelete ? (
-                              <Button variant="danger" onClick={() => removeItem(item)}>
-                                Supprimer
-                              </Button>
-                            ) : null}
-                          </div>
-                        </td>
-                      ) : null}
-                    </tr>
-                  ))
-                )}
+                    {(canEdit || canDelete) ? (
+                      <td className="px-3 py-3">
+                        <div className="flex gap-2">
+                          {canEdit ? (
+                            <Button variant="subtle" onClick={() => openEditModal(item)}>
+                              Editer
+                            </Button>
+                          ) : null}
+                          {canDelete ? (
+                            <Button variant="danger" onClick={() => openDeleteConfirm(item[idKey])}>
+                              Supprimer
+                            </Button>
+                          ) : null}
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
 
-        <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+        <div className="theme-muted mt-4 space-y-3 text-sm">
           <p>Total: {pagination.total}</p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              disabled={pagination.currentPage <= 1}
-              onClick={() => setPagination((prev) => ({ ...prev, currentPage: prev.currentPage - 1 }))}
-            >
-              Precedent
-            </Button>
-            <span>
-              Page {pagination.currentPage} / {Math.max(1, pagination.totalPages)}
-            </span>
-            <Button
-              variant="secondary"
-              disabled={pagination.currentPage >= pagination.totalPages}
-              onClick={() => setPagination((prev) => ({ ...prev, currentPage: prev.currentPage + 1 }))}
-            >
-              Suivant
-            </Button>
-          </div>
+          <Pagination
+            currentPage={pagination.currentPage}
+            lastPage={Math.max(1, pagination.totalPages)}
+            onPageChange={(page) =>
+              setPagination((prev) => ({
+                ...prev,
+                currentPage: page,
+              }))
+            }
+          />
         </div>
       </div>
 
@@ -365,6 +462,17 @@ export function CrudPage({
           })}
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        title="Confirm deletion"
+        message="Are you sure you want to delete this record? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={closeDeleteConfirm}
+        danger
+        isConfirming={isDeleting}
+      />
     </div>
   );
 }
