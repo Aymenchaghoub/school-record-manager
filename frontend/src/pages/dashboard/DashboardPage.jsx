@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { EmptyState } from '../../components/common/EmptyState';
 import { Alert } from '../../components/ui/Alert';
 import { Spinner } from '../../components/ui/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -24,6 +25,16 @@ function renderRoleDashboard(role, payload) {
   }
 
   return <ParentDashboard payload={payload} />;
+}
+
+function hasDashboardData(payload) {
+  const source = payload?.stats && typeof payload.stats === 'object' ? payload.stats : payload;
+
+  if (!source || typeof source !== 'object') {
+    return false;
+  }
+
+  return Object.values(source).some((value) => value !== null && value !== undefined && value !== '');
 }
 
 export function DashboardPage() {
@@ -70,6 +81,8 @@ export function DashboardPage() {
     };
   }, [user?.role]);
 
+  const showEmptyState = !isLoading && !error && !hasDashboardData(payload);
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -79,7 +92,13 @@ export function DashboardPage() {
 
       {isLoading ? <Spinner label="Chargement du dashboard..." /> : null}
       {error ? <Alert variant="warning">{error}</Alert> : null}
-      {!isLoading ? renderRoleDashboard(user?.role, payload) : null}
+      {showEmptyState ? (
+        <EmptyState
+          title="No data available yet"
+          description="Dashboard metrics will appear once activity data is available."
+        />
+      ) : null}
+      {!isLoading && !showEmptyState ? renderRoleDashboard(user?.role, payload) : null}
     </div>
   );
 }
