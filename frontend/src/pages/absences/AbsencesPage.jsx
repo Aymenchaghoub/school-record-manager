@@ -12,9 +12,26 @@ const absenceTypeOptions = [
   { value: 'early_departure', label: 'Depart anticipe' },
 ];
 
+const monthFilterOptions = [
+  { value: '', label: 'All months' },
+  { value: '1', label: 'Jan' },
+  { value: '2', label: 'Feb' },
+  { value: '3', label: 'Mar' },
+  { value: '4', label: 'Apr' },
+  { value: '5', label: 'May' },
+  { value: '6', label: 'Jun' },
+  { value: '7', label: 'Jul' },
+  { value: '8', label: 'Aug' },
+  { value: '9', label: 'Sep' },
+  { value: '10', label: 'Oct' },
+  { value: '11', label: 'Nov' },
+  { value: '12', label: 'Dec' },
+];
+
 export function AbsencesPage() {
   const { user } = useAuth();
   const role = user?.role;
+  const currentYear = new Date().getFullYear();
 
   const service = useMemo(
     () => createAbsencesService(role || ROLES.ADMIN),
@@ -22,6 +39,18 @@ export function AbsencesPage() {
   );
 
   const canMutate = role === ROLES.ADMIN || role === ROLES.TEACHER;
+
+  const absenceFilters = useMemo(
+    () => [
+      {
+        name: 'month',
+        label: 'Month',
+        options: monthFilterOptions,
+        defaultValue: '',
+      },
+    ],
+    []
+  );
 
   return (
     <CrudPage
@@ -32,6 +61,13 @@ export function AbsencesPage() {
       canCreate={canMutate}
       canEdit={canMutate}
       canDelete={canMutate}
+      filters={absenceFilters}
+      buildListParams={({ search, page, filters }) => ({
+        search,
+        page,
+        month: filters.month,
+        year: filters.month ? currentYear : undefined,
+      })}
       columns={[
         {
           key: 'student_name',
@@ -87,6 +123,11 @@ export function AbsencesPage() {
         recorded_by: values.recorded_by ? Number(values.recorded_by) : null,
         is_justified: Boolean(values.is_justified),
       })}
+      emptyState={{
+        title: 'No absences recorded',
+        description: 'Track attendance events to keep presence history complete.',
+        actionLabel: 'Record an absence',
+      }}
     />
   );
 }
