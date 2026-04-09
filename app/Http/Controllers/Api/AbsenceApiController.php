@@ -4,23 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Absences\StoreAbsenceRequest;
+use App\Http\Requests\Api\Absences\UpdateAbsenceRequest;
 use App\Models\Absence;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class AbsenceApiController extends Controller
 {
     use ApiResponse;
-
-    private const TYPES = [
-        'full_day',
-        'partial',
-        'late_arrival',
-        'early_departure',
-    ];
 
     public function index(Request $request): JsonResponse
     {
@@ -54,13 +48,13 @@ class AbsenceApiController extends Controller
         return $this->paginated($query->paginate($perPage)->withQueryString(), 'Absences fetched successfully.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreAbsenceRequest $request): JsonResponse
     {
         if (! $this->canMutate($request->user())) {
             return $this->error('You are not allowed to create absences.', [], 403);
         }
 
-        $validated = $this->validatePayload($request);
+        $validated = $request->validated();
         $payload = $this->normalizePayload($validated, $request->user(), false);
 
         $absence = Absence::create($payload);
@@ -83,7 +77,7 @@ class AbsenceApiController extends Controller
         return $this->success($absence, 'Absence fetched successfully.');
     }
 
-    public function update(Request $request, Absence $absence): JsonResponse
+    public function update(UpdateAbsenceRequest $request, Absence $absence): JsonResponse
     {
         if (! $this->canMutate($request->user())) {
             return $this->error('You are not allowed to update absences.', [], 403);
@@ -95,7 +89,7 @@ class AbsenceApiController extends Controller
             return $this->error('Absence not found.', [], 404);
         }
 
-        $validated = $this->validatePayload($request, true);
+        $validated = $request->validated();
         $payload = $this->normalizePayload($validated, $request->user(), true);
 
         $ownedAbsence->update($payload);
@@ -173,26 +167,6 @@ class AbsenceApiController extends Controller
     private function canMutate(User $user): bool
     {
         return $user->isAdmin() || $user->isTeacher();
-    }
-
-    private function validatePayload(Request $request, bool $isUpdate = false): array
-    {
-        $required = $isUpdate ? 'sometimes' : 'required';
-
-        return $request->validate([
-            'student_id' => [$required, 'integer', 'exists:users,id'],
-            'class_id' => [$required, 'integer', 'exists:classes,id'],
-            'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
-            'recorded_by' => ['nullable', 'integer', 'exists:users,id'],
-            'absence_date' => [$required, 'date'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
-            'is_justified' => ['sometimes', 'boolean'],
-            'type' => [$required, Rule::in(self::TYPES)],
-            'reason' => ['nullable', 'string', 'max:255'],
-            'justification' => ['nullable', 'string'],
-            'justification_document' => ['nullable', 'string', 'max:255'],
-        ]);
     }
 
     private function normalizePayload(array $validated, User $user, bool $isUpdate): array
