@@ -13,19 +13,27 @@ class Event extends Model
         'title',
         'description',
         'type',
+        'event_type',
+        'event_date',
+        'event_time',
         'start_date',
         'end_date',
         'location',
         'class_id',
         'created_by',
         'is_public',
+        'is_published',
+        'target_audience',
         'color',
     ];
 
     protected $casts = [
+        'event_date' => 'date',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'is_public' => 'boolean',
+        'is_published' => 'boolean',
+        'target_audience' => 'array',
     ];
 
     /**
