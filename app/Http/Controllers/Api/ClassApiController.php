@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Classes\StoreClassRequest;
+use App\Http\Requests\Api\Classes\UpdateClassRequest;
 use App\Models\ClassModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ClassApiController extends Controller
 {
@@ -46,9 +47,9 @@ class ClassApiController extends Controller
         return $this->paginated($query->paginate($perPage)->withQueryString(), 'Classes fetched successfully.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreClassRequest $request): JsonResponse
     {
-        $validated = $this->validatePayload($request);
+        $validated = $request->validated();
         $payload = $this->normalizePayload($validated);
 
         $class = ClassModel::create($payload);
@@ -68,9 +69,9 @@ class ClassApiController extends Controller
         );
     }
 
-    public function update(Request $request, ClassModel $class): JsonResponse
+    public function update(UpdateClassRequest $request, ClassModel $class): JsonResponse
     {
-        $validated = $this->validatePayload($request, $class);
+        $validated = $request->validated();
         $payload = $this->normalizePayload($validated);
 
         $class->update($payload);
@@ -86,27 +87,6 @@ class ClassApiController extends Controller
         $class->delete();
 
         return $this->success(null, 'Class deleted successfully.');
-    }
-
-    private function validatePayload(Request $request, ?ClassModel $class = null): array
-    {
-        return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('classes', 'code')->ignore($class?->id),
-            ],
-            'level' => ['required', 'string', 'max:100'],
-            'section' => ['nullable', 'string', 'max:50'],
-            'academic_year' => ['required', 'string', 'max:30'],
-            'responsible_teacher_id' => ['nullable', 'exists:users,id'],
-            'teacher_id' => ['nullable', 'exists:users,id'],
-            'capacity' => ['nullable', 'integer', 'min:1', 'max:500'],
-            'description' => ['nullable', 'string'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
     }
 
     private function normalizePayload(array $validated): array
