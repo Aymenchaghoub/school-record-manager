@@ -6,12 +6,12 @@ import { TopBar } from './TopBar';
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-100">
       <Sidebar
-        role={user?.role}
+        role={role || user?.role}
         isOpen={sidebarOpen}
         onNavigate={() => setSidebarOpen(false)}
       />
