@@ -55,9 +55,9 @@ export const NAV_ITEMS_BY_ROLE = {
 export const API_ENDPOINTS = {
   auth: {
     csrf: '/sanctum/csrf-cookie',
-    loginCandidates: ['/api/auth/login', '/api/login'],
-    meCandidates: ['/api/auth/me', '/api/user'],
-    logoutCandidates: ['/api/auth/logout', '/api/logout'],
+    loginCandidates: ['/api/login', '/login'],
+    meCandidates: ['/api/user'],
+    logoutCandidates: ['/api/logout', '/logout'],
   },
   dashboard: {
     [ROLES.ADMIN]: '/api/admin/dashboard',
