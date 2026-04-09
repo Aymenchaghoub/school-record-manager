@@ -84,6 +84,13 @@ export function UsersPage() {
 
         return payload;
       }}
+      searchPlaceholder="Search users by name..."
+      searchDebounceMs={300}
+      emptyState={{
+        title: 'No users found',
+        description: 'Create your first account to start managing the platform.',
+        actionLabel: 'Add your first user',
+      }}
     />
   );
 }
