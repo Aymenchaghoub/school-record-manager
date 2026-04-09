@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { parseEntityResponse, parseListResponse } from '../../utils/response';
+import { parseListResponse } from '../../utils/response';
 import { formatDate, formatDateTime, toBoolean } from '../../utils/format';
 import { Alert } from '../ui/Alert';
 import { Badge } from '../ui/Badge';
@@ -61,6 +61,7 @@ export function CrudPage({
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -99,6 +100,7 @@ export function CrudPage({
 
   const openCreateModal = () => {
     resetForm();
+    setError('');
     setIsModalOpen(true);
   };
 
@@ -114,6 +116,7 @@ export function CrudPage({
 
     setEditingItem(item);
     setFormValues(nextValues);
+    setError('');
     setIsModalOpen(true);
   };
 
@@ -133,14 +136,17 @@ export function CrudPage({
     event.preventDefault();
     setIsSubmitting(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const payload = mapFormToPayload ? mapFormToPayload(formValues) : formValues;
 
       if (editingItem) {
         await service.update(editingItem[idKey], payload);
+        setSuccessMessage('Modification enregistree avec succes.');
       } else {
         await service.create(payload);
+        setSuccessMessage('Creation enregistree avec succes.');
       }
 
       closeModal();
@@ -160,7 +166,10 @@ export function CrudPage({
     }
 
     try {
+      setError('');
+      setSuccessMessage('');
       await service.remove(item[idKey]);
+      setSuccessMessage('Suppression effectuee avec succes.');
       await loadItems();
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Suppression impossible');
@@ -198,6 +207,7 @@ export function CrudPage({
         </div>
 
         {error ? <Alert variant="danger">{error}</Alert> : null}
+        {successMessage ? <Alert variant="success">{successMessage}</Alert> : null}
 
         {isLoading ? (
           <div className="py-6">
