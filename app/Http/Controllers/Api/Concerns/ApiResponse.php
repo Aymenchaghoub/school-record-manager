@@ -16,15 +16,22 @@ trait ApiResponse
         ], $status);
     }
 
-    protected function paginated(LengthAwarePaginator $paginator, string $message = 'Data fetched successfully.'): JsonResponse
+    protected function paginated(
+        LengthAwarePaginator $paginator,
+        string $message = 'Data fetched successfully.',
+        array $extra = []
+    ): JsonResponse
     {
-        return $this->success([
-            'items' => $paginator->items(),
+        $items = $paginator->items();
+
+        return $this->success(array_merge([
+            'data' => $items,
+            'items' => $items,
             'current_page' => $paginator->currentPage(),
             'last_page' => $paginator->lastPage(),
             'per_page' => $paginator->perPage(),
             'total' => $paginator->total(),
-        ], $message);
+        ], $extra), $message);
     }
 
     protected function error(string $message = 'Error.', array $errors = [], int $status = 422): JsonResponse
