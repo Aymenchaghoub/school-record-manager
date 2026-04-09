@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AbsenceApiController;
 use App\Http\Controllers\Api\ClassApiController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\GradeApiController;
@@ -16,6 +17,17 @@ Route::post('/login', [AuthController::class, 'login'])->middleware(['web', 'gue
 Route::middleware(['web', 'auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    Route::prefix('dashboard')->group(function () {
+        Route::middleware('role:admin,teacher')->group(function () {
+            Route::get('/students-per-class', [DashboardController::class, 'studentsPerClass']);
+            Route::get('/average-per-subject', [DashboardController::class, 'averagePerSubject']);
+            Route::get('/absences-per-month', [DashboardController::class, 'absencesPerMonth']);
+            Route::get('/kpis', [DashboardController::class, 'kpis']);
+        });
+
+        Route::middleware('role:admin,teacher,student,parent')->get('/grade-evolution', [DashboardController::class, 'gradeEvolution']);
+    });
 
     Route::prefix('admin')->middleware('role:admin')->group(function () {
         Route::get('/dashboard', [DashboardApiController::class, 'admin']);
