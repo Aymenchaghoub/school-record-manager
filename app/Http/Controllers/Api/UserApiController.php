@@ -17,19 +17,14 @@ class UserApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $search = trim((string) $request->input('search', ''));
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
 
         $query = User::query()->latest();
 
         if ($search !== '') {
-            $query->where(function ($builder) use ($search) {
-                $builder->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('role', 'like', "%{$search}%");
-            });
+            $query->where('name', 'like', "%{$search}%");
         }
 
-        return $this->paginated($query->paginate($perPage)->withQueryString(), 'Users fetched successfully.');
+        return $this->paginated($query->paginate(10)->withQueryString(), 'Users fetched successfully.');
     }
 
     public function store(StoreUserRequest $request): JsonResponse
