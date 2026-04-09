@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\SubjectApiController;
 use App\Http\Controllers\Api\UserApiController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login'])->middleware(['web', 'guest']);
+Route::post('/login', [AuthController::class, 'login'])->middleware(['web', 'guest', 'throttle:5,1']);
 
 Route::middleware(['web', 'auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -30,19 +30,14 @@ Route::middleware(['web', 'auth:sanctum'])->group(function () {
 
     Route::prefix('teacher')->middleware('role:teacher')->group(function () {
         Route::get('/dashboard', [DashboardApiController::class, 'teacher']);
-        Route::apiResource('classes', ClassApiController::class)->only(['index', 'show']);
-        Route::apiResource('subjects', SubjectApiController::class)->only(['index', 'show']);
         Route::apiResource('grades', GradeApiController::class);
         Route::apiResource('absences', AbsenceApiController::class);
-        Route::apiResource('events', EventApiController::class);
     });
 
     Route::prefix('student')->middleware('role:student')->group(function () {
         Route::get('/dashboard', [DashboardApiController::class, 'student']);
         Route::apiResource('grades', GradeApiController::class)->only(['index', 'show']);
         Route::apiResource('absences', AbsenceApiController::class)->only(['index', 'show']);
-        Route::apiResource('report-cards', ReportCardApiController::class)->only(['index', 'show']);
-        Route::apiResource('events', EventApiController::class)->only(['index', 'show']);
     });
 
     Route::prefix('parent')->middleware('role:parent')->group(function () {
@@ -51,9 +46,5 @@ Route::middleware(['web', 'auth:sanctum'])->group(function () {
         Route::get('/children/grades/{grade}', [GradeApiController::class, 'show']);
         Route::get('/children/absences', [AbsenceApiController::class, 'index']);
         Route::get('/children/absences/{absence}', [AbsenceApiController::class, 'show']);
-        Route::get('/children/report-cards', [ReportCardApiController::class, 'index']);
-        Route::get('/children/report-cards/{report_card}', [ReportCardApiController::class, 'show']);
-        Route::get('/events', [EventApiController::class, 'index']);
-        Route::get('/events/{event}', [EventApiController::class, 'show']);
     });
 });
