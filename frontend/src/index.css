@@ -3,35 +3,220 @@
 @tailwind utilities;
 
 :root {
+  --bg: #ffffff;
+  --fg: #111111;
+  --card: #f5f5f5;
+  --border: #e0e0e0;
+  --muted: #64748b;
+  --accent: #06b6d4;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #0f172a;
-  background-color: #f8fafc;
+  color: var(--fg);
+  background-color: var(--bg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dark {
+  --bg: #0f172a;
+  --fg: #f1f5f9;
+  --card: #1e293b;
+  --border: #334155;
+  --muted: #94a3b8;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  color: var(--fg);
   background:
     radial-gradient(circle at 0% 0%, rgba(14, 116, 144, 0.14), transparent 35%),
     radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.12), transparent 35%),
-    #f8fafc;
+    var(--bg);
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.2), transparent 40%),
+    radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.16), transparent 40%),
+    var(--bg);
 }
 
 #root {
   min-height: 100vh;
 }
 
+.global-spinner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.global-spinner-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  border: 4px solid transparent;
+  border-top-color: #38bdf8;
+  animation: global-spinner-rotate 0.8s linear infinite;
+}
+
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.confirm-modal-overlay-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.confirm-modal-panel {
+  width: min(460px, calc(100vw - 2rem));
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 1.25rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+  transform: scale(0.95);
+  opacity: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.confirm-modal-panel-open {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.app-shell {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.app-topbar {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+.app-sidebar {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--fg);
+}
+
+.sidebar-link {
+  border-left-color: transparent;
+  color: var(--fg);
+  opacity: 0.8;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.sidebar-link:hover {
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--fg);
+  opacity: 1;
+}
+
+.sidebar-link-active {
+  border-left-color: var(--accent);
+  background: rgba(6, 182, 212, 0.16);
+  color: var(--fg);
+  opacity: 1;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(6, 182, 212, 0.16);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.96);
+}
+
+.theme-table {
+  color: var(--fg);
+}
+
+.theme-table thead tr {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.theme-table tbody tr {
+  border-color: var(--border);
+}
+
+.theme-muted {
+  color: var(--muted);
+}
+
+.theme-modal-surface {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--fg);
+}
+
+.theme-modal-divider {
+  border-color: var(--border);
+}
+
+.theme-modal-close {
+  color: var(--muted);
+}
+
+.theme-modal-close:hover {
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--fg);
+}
+
+@keyframes global-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @layer components {
   .surface-card {
-    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-2xl border shadow-sm;
+    border-color: var(--border);
+    background: var(--card);
+    color: var(--fg);
   }
 
   .surface-muted {
-    @apply rounded-2xl border border-slate-200 bg-slate-50;
+    @apply rounded-2xl border;
+    border-color: var(--border);
+    background: color-mix(in srgb, var(--card) 88%, var(--bg) 12%);
+    color: var(--fg);
   }
 }
