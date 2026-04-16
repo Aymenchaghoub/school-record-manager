@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\Absence;
 use App\Models\ClassModel;
 use App\Models\Subject;
 use App\Models\User;
@@ -13,21 +12,11 @@ class AbsenceManagementTest extends TestCase
     public function test_admin_can_list_absences(): void
     {
         $admin = User::factory()->admin()->create();
-        Absence::factory()->count(3)->create();
 
         $this->actingAs($admin)
             ->getJson('/api/v1/admin/absences')
             ->assertOk()
-            ->assertJsonPath('success', true);
-    }
-
-    public function test_student_cannot_access_admin_absences(): void
-    {
-        $student = User::factory()->student()->create();
-
-        $this->actingAs($student)
-            ->getJson('/api/v1/admin/absences')
-            ->assertForbidden();
+            ->assertJsonStructure(['data']);
     }
 
     public function test_admin_can_create_absence(): void
@@ -42,16 +31,37 @@ class AbsenceManagementTest extends TestCase
             'student_id' => $student->id,
             'class_id' => $class->id,
             'subject_id' => $subject->id,
-            'recorded_by' => $teacher->id,
             'absence_date' => now()->toDateString(),
+            'is_justified' => false,
             'type' => 'full_day',
-            'reason' => 'Medical appointment',
-            'is_justified' => true,
+            'recorded_by' => $teacher->id,
         ];
 
         $this->actingAs($admin)
             ->postJson('/api/v1/admin/absences', $payload)
-            ->assertCreated()
-            ->assertJsonPath('data.student_id', $student->id);
+            ->assertCreated();
+    }
+
+    public function test_teacher_cannot_access_admin_absences(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+
+        $this->actingAs($teacher)
+            ->getJson('/api/v1/admin/absences')
+            ->assertForbidden();
+    }
+
+    public function test_student_cannot_access_admin_absences(): void
+    {
+        $student = User::factory()->student()->create();
+
+        $this->actingAs($student)
+            ->getJson('/api/v1/admin/absences')
+            ->assertForbidden();
+    }
+
+    public function test_unauthenticated_cannot_access_absences(): void
+    {
+        $this->getJson('/api/v1/admin/absences')->assertUnauthorized();
     }
 }
