@@ -9,6 +9,7 @@ import { ClassesPage } from '../pages/classes/ClassesPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { EventsPage } from '../pages/events/EventsPage';
 import { GradesPage } from '../pages/grades/GradesPage';
+import ProfilePage from '../pages/profile/ProfilePage';
 import { ReportCardsPage } from '../pages/report-cards/ReportCardsPage';
 import { SubjectsPage } from '../pages/subjects/SubjectsPage';
 import { UsersPage } from '../pages/users/UsersPage';
@@ -26,6 +27,7 @@ export function AppRouter() {
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
 
             <Route
               path="/users"
