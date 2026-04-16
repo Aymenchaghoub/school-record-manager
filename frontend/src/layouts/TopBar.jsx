@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
 import { useTheme } from '../context/ThemeContext';
 
 export function TopBar({ user, onLogout, onToggleSidebar }) {
   const { isDark, toggleTheme } = useTheme();
+  const handleLogout = () => onLogout?.();
 
   return (
     <header className="app-topbar sticky top-0 z-30 border-b px-4 py-3 backdrop-blur lg:px-8">
@@ -36,21 +36,50 @@ export function TopBar({ user, onLogout, onToggleSidebar }) {
             <span aria-hidden="true">{isDark ? '☀' : '☾'}</span>
           </button>
 
-          <Link
-            to="/profile"
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Voir mon profil"
-          >
-            <div className="flex h-8 w-8 select-none items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-              {user?.first_name?.[0]?.toUpperCase() ?? user?.name?.[0]?.toUpperCase() ?? '?'}
-            </div>
-            <span className="hidden text-sm font-medium text-gray-700 dark:text-gray-200 sm:block">
-              {user?.first_name ? `${user.first_name} ${user?.last_name ?? ''}`.trim() : user?.name || 'Utilisateur'}
-            </span>
-          </Link>
-          <Button variant="secondary" onClick={onLogout}>
-            Deconnexion
-          </Button>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Voir mon profil"
+            >
+              <div className="flex h-9 w-9 select-none items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white ring-2 ring-blue-200 dark:ring-blue-900">
+                {user?.first_name?.[0]?.toUpperCase() ?? user?.name?.[0]?.toUpperCase() ?? '?'}
+              </div>
+              <div className="hidden flex-col leading-tight sm:flex">
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {user?.first_name ? `${user.first_name} ${user?.last_name ?? ''}`.trim() : user?.name || 'Utilisateur'}
+                </span>
+                <span className="text-xs capitalize text-gray-500 dark:text-gray-400">{user?.role || '-'}</span>
+              </div>
+            </Link>
+
+            <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
+              aria-label="Se deconnecter"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span className="hidden sm:inline">Deconnexion</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>
