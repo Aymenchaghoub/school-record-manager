@@ -28,3 +28,17 @@ database/migrations/2026_04_09_181108_create_cache_table.php
 database/migrations/2026_04_09_181108_create_sessions_table.php
 database/migrations/2026_04_09_181109_create_failed_jobs_table.php
 database/migrations/2026_04_09_181109_create_jobs_table.php
+
+# Audit & temp files
+audit/
+reports/
+tmp/
+*.audit.md
+create-views.ps1
+*.one-shot.sh
+
+# Root-level generated diagnostics
+audit_*.txt
+audit_*.csv
+rapport.md
+start-project.ps1
