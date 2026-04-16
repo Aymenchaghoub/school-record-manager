@@ -10,10 +10,22 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router-dom'],
-            charts: ['chart.js', 'react-chartjs-2'],
-            ui: ['axios'],
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return;
+            }
+
+            if (id.includes('/react/') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor';
+            }
+
+            if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
+              return 'charts';
+            }
+
+            if (id.includes('/axios/')) {
+              return 'ui';
+            }
           },
         },
       },
