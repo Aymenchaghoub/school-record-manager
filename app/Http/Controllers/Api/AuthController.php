@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Authenticate a user using session cookies (Sanctum SPA mode).
      */
@@ -44,7 +49,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login successful.',
-            'user' => $user,
+            'user' => $this->profilePayload($user),
         ]);
     }
 
@@ -54,8 +59,35 @@ class AuthController extends Controller
     public function user(Request $request): JsonResponse
     {
         return response()->json([
-            'user' => $request->user(),
+            'user' => $this->profilePayload($request->user()),
         ]);
+    }
+
+    public function profile(Request $request): JsonResponse
+    {
+        return $this->success($this->profilePayload($request->user()));
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', Rule::unique('users')->ignore($request->user()->id)],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+        $user->name = trim("{$validated['first_name']} {$validated['last_name']}");
+        $user->email = $validated['email'];
+
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return $this->success($this->profilePayload($user->fresh()), 'Profile updated.');
     }
 
     /**
@@ -70,6 +102,20 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logged out successfully.',
+        ]);
+    }
+
+    private function profilePayload($user): array
+    {
+        $name = trim((string) ($user?->name ?? ''));
+        $parts = preg_split('/\s+/', $name, 2, PREG_SPLIT_NO_EMPTY);
+
+        $firstName = $parts[0] ?? '';
+        $lastName = $parts[1] ?? '';
+
+        return array_merge($user?->toArray() ?? [], [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
         ]);
     }
 }
