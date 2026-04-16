@@ -183,10 +183,11 @@ class GradeManagementTest extends TestCase
         $admin = User::factory()->admin()->create();
         $grade = Grade::factory()->create(['value' => 10]);
 
-        $this->actingAs($admin)
+        $response = $this->actingAs($admin)
             ->putJson("/api/v1/admin/grades/{$grade->id}", ['value' => 16, 'type' => 'exam', 'term' => 'Term 1'])
-            ->assertOk()
-            ->assertJsonPath('data.value', 16);
+            ->assertOk();
+
+        $this->assertSame(16.0, (float) $response->json('data.value'));
     }
 
     public function test_admin_can_delete_grade(): void

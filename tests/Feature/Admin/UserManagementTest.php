@@ -54,7 +54,7 @@ class UserManagementTest extends TestCase
             ->deleteJson("/api/v1/admin/users/{$target->id}")
             ->assertOk();
 
-        $this->assertDatabaseMissing('users', ['id' => $target->id]);
+        $this->assertSoftDeleted('users', ['id' => $target->id]);
     }
 
     public function test_teacher_cannot_access_user_management(): void
