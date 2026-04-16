@@ -84,4 +84,120 @@ class GradeManagementTest extends TestCase
             ->postJson('/api/v1/admin/grades', $payload)
             ->assertUnprocessable();
     }
+
+    public function test_grade_value_above_20_is_rejected(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        $class = ClassModel::factory()->create(['teacher_id' => $teacher->id]);
+        $subject = Subject::factory()->create();
+
+        $payload = [
+            'student_id' => $student->id,
+            'subject_id' => $subject->id,
+            'class_id' => $class->id,
+            'teacher_id' => $teacher->id,
+            'value' => 25,
+            'type' => 'exam',
+            'grade_date' => now()->toDateString(),
+            'term' => 'Term 1',
+        ];
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/grades', $payload)
+            ->assertUnprocessable();
+    }
+
+    public function test_grade_value_below_0_is_rejected(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        $class = ClassModel::factory()->create(['teacher_id' => $teacher->id]);
+        $subject = Subject::factory()->create();
+
+        $payload = [
+            'student_id' => $student->id,
+            'subject_id' => $subject->id,
+            'class_id' => $class->id,
+            'teacher_id' => $teacher->id,
+            'value' => -1,
+            'type' => 'exam',
+            'grade_date' => now()->toDateString(),
+            'term' => 'Term 1',
+        ];
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/grades', $payload)
+            ->assertUnprocessable();
+    }
+
+    public function test_student_cannot_create_grade(): void
+    {
+        $student = User::factory()->student()->create();
+        $teacher = User::factory()->teacher()->create();
+        $class = ClassModel::factory()->create(['teacher_id' => $teacher->id]);
+        $subject = Subject::factory()->create();
+
+        $payload = [
+            'student_id' => $student->id,
+            'subject_id' => $subject->id,
+            'class_id' => $class->id,
+            'value' => 14,
+            'type' => 'exam',
+            'grade_date' => now()->toDateString(),
+            'term' => 'Term 1',
+        ];
+
+        $this->actingAs($student)
+            ->postJson('/api/v1/admin/grades', $payload)
+            ->assertForbidden();
+    }
+
+    public function test_parent_cannot_create_grade(): void
+    {
+        $parent = User::factory()->parent()->create();
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        $class = ClassModel::factory()->create(['teacher_id' => $teacher->id]);
+        $subject = Subject::factory()->create();
+
+        $payload = [
+            'student_id' => $student->id,
+            'subject_id' => $subject->id,
+            'class_id' => $class->id,
+            'value' => 14,
+            'type' => 'exam',
+            'grade_date' => now()->toDateString(),
+            'term' => 'Term 1',
+        ];
+
+        $this->actingAs($parent)
+            ->postJson('/api/v1/admin/grades', $payload)
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_update_grade(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $grade = Grade::factory()->create(['value' => 10]);
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/grades/{$grade->id}", ['value' => 16, 'type' => 'exam', 'term' => 'Term 1'])
+            ->assertOk()
+            ->assertJsonPath('data.value', 16);
+    }
+
+    public function test_admin_can_delete_grade(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $grade = Grade::factory()->create();
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/v1/admin/grades/{$grade->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('grades', ['id' => $grade->id]);
+    }
 }
