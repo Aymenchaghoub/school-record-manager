@@ -4,25 +4,10 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Models\User;
-use App\Models\Grade;
-use App\Models\Absence;
-use App\Models\ClassModel;
-use App\Models\Subject;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 
 class UserFlowsTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        // Seed basic data
-        $this->seed(\Database\Seeders\DatabaseSeeder::class);
-    }
-
     /**
      * Test admin can create a new user
      */

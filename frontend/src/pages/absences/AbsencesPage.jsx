@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
+import apiClient from '../../services/apiClient';
 import { createAbsencesService } from '../../services/absencesService';
 import { ROLES } from '../../utils/constants';
+import { parseListResponse } from '../../utils/response';
 
 const absenceTypeOptions = [
   { value: 'full_day', label: 'Journee complete' },
@@ -13,15 +15,15 @@ const absenceTypeOptions = [
 ];
 
 const monthFilterOptions = [
-  { value: '', label: 'All months' },
+  { value: '', label: 'Tous les mois' },
   { value: '1', label: 'Jan' },
-  { value: '2', label: 'Feb' },
+  { value: '2', label: 'Fev' },
   { value: '3', label: 'Mar' },
-  { value: '4', label: 'Apr' },
-  { value: '5', label: 'May' },
-  { value: '6', label: 'Jun' },
-  { value: '7', label: 'Jul' },
-  { value: '8', label: 'Aug' },
+  { value: '4', label: 'Avr' },
+  { value: '5', label: 'Mai' },
+  { value: '6', label: 'Juin' },
+  { value: '7', label: 'Juil' },
+  { value: '8', label: 'Aout' },
   { value: '9', label: 'Sep' },
   { value: '10', label: 'Oct' },
   { value: '11', label: 'Nov' },
@@ -32,6 +34,10 @@ export function AbsencesPage() {
   const { user } = useAuth();
   const role = user?.role;
   const currentYear = new Date().getFullYear();
+  const [studentFieldOptions, setStudentFieldOptions] = useState([{ value: '', label: 'Selectionner un eleve' }]);
+  const [classFieldOptions, setClassFieldOptions] = useState([{ value: '', label: 'Selectionner une classe' }]);
+  const [subjectFieldOptions, setSubjectFieldOptions] = useState([{ value: '', label: 'Selectionner une matiere' }]);
+  const [teacherFieldOptions, setTeacherFieldOptions] = useState([{ value: '', label: 'Selectionner un enseignant' }]);
 
   const service = useMemo(
     () => createAbsencesService(role || ROLES.ADMIN),
@@ -40,16 +46,95 @@ export function AbsencesPage() {
 
   const canMutate = role === ROLES.ADMIN || role === ROLES.TEACHER;
 
+  useEffect(() => {
+    if (!canMutate) {
+      return;
+    }
+
+    const loadFormOptions = async () => {
+      try {
+        const usersEndpoint = role === ROLES.ADMIN
+          ? '/api/v1/admin/users'
+          : '/api/v1/teacher/students';
+        const classesEndpoint = role === ROLES.ADMIN
+          ? '/api/v1/admin/classes'
+          : '/api/v1/teacher/classes';
+        const subjectsEndpoint = role === ROLES.ADMIN
+          ? '/api/v1/admin/subjects'
+          : '/api/v1/teacher/subjects';
+
+        const [studentsRes, classesRes, subjectsRes] = await Promise.all([
+          apiClient.get(usersEndpoint, { params: { role: 'student', per_page: 100 } }),
+          apiClient.get(classesEndpoint, { params: { per_page: 100 } }),
+          apiClient.get(subjectsEndpoint, { params: { per_page: 100 } }),
+        ]);
+
+        const students = parseListResponse(studentsRes.data?.data || studentsRes.data).items;
+        const classes = parseListResponse(classesRes.data?.data || classesRes.data).items;
+        const subjects = parseListResponse(subjectsRes.data?.data || subjectsRes.data).items;
+
+        setStudentFieldOptions([
+          { value: '', label: 'Selectionner un eleve' },
+          ...students.map((student) => ({ value: String(student.id), label: student.name })),
+        ]);
+
+        setClassFieldOptions([
+          { value: '', label: 'Selectionner une classe' },
+          ...classes.map((classItem) => ({ value: String(classItem.id), label: classItem.name })),
+        ]);
+
+        setSubjectFieldOptions([
+          { value: '', label: 'Selectionner une matiere' },
+          ...subjects.map((subject) => ({ value: String(subject.id), label: subject.name })),
+        ]);
+
+        if (role === ROLES.ADMIN) {
+          const teachersRes = await apiClient.get('/api/v1/admin/users', {
+            params: { role: 'teacher', per_page: 100 },
+          });
+          const teachers = parseListResponse(teachersRes.data?.data || teachersRes.data).items;
+
+          setTeacherFieldOptions([
+            { value: '', label: 'Selectionner un enseignant' },
+            ...teachers.map((teacher) => ({ value: String(teacher.id), label: teacher.name })),
+          ]);
+        } else {
+          setTeacherFieldOptions([
+            { value: '', label: 'Selectionner un enseignant' },
+            { value: String(user?.id || ''), label: user?.name || 'Enseignant' },
+          ]);
+        }
+      } catch {
+        setStudentFieldOptions([{ value: '', label: 'Selectionner un eleve' }]);
+        setClassFieldOptions([{ value: '', label: 'Selectionner une classe' }]);
+        setSubjectFieldOptions([{ value: '', label: 'Selectionner une matiere' }]);
+        setTeacherFieldOptions([{ value: '', label: 'Selectionner un enseignant' }]);
+      }
+    };
+
+    loadFormOptions();
+  }, [canMutate, role, user?.id, user?.name]);
+
   const absenceFilters = useMemo(
     () => [
       {
         name: 'month',
-        label: 'Month',
+        label: 'Mois',
         options: monthFilterOptions,
         defaultValue: '',
       },
     ],
     []
+  );
+
+  const buildAbsenceListParams = useCallback(
+    ({ search, page, filters }) => ({
+      search,
+      page,
+      month: filters.month,
+      year: filters.month ? currentYear : undefined,
+    }),
+    [currentYear]
   );
 
   return (
@@ -62,12 +147,7 @@ export function AbsencesPage() {
       canEdit={canMutate}
       canDelete={canMutate}
       filters={absenceFilters}
-      buildListParams={({ search, page, filters }) => ({
-        search,
-        page,
-        month: filters.month,
-        year: filters.month ? currentYear : undefined,
-      })}
+      buildListParams={buildAbsenceListParams}
       columns={[
         {
           key: 'student_name',
@@ -97,10 +177,10 @@ export function AbsencesPage() {
         { key: 'reason', label: 'Motif' },
       ]}
       fields={[
-        { name: 'student_id', label: 'ID eleve', type: 'number', required: true },
-        { name: 'class_id', label: 'ID classe', type: 'number', required: true },
-        { name: 'subject_id', label: 'ID matiere', type: 'number' },
-        { name: 'recorded_by', label: 'ID enseignant', type: 'number' },
+        { name: 'student_id', label: 'Eleve', type: 'select', required: true, options: studentFieldOptions },
+        { name: 'class_id', label: 'Classe', type: 'select', required: true, options: classFieldOptions },
+        { name: 'subject_id', label: 'Matiere', type: 'select', options: subjectFieldOptions },
+        { name: 'recorded_by', label: 'Enseignant', type: 'select', options: teacherFieldOptions },
         { name: 'absence_date', label: 'Date absence', type: 'date', required: true },
         { name: 'start_time', label: 'Heure debut', type: 'time' },
         { name: 'end_time', label: 'Heure fin', type: 'time' },
@@ -111,9 +191,10 @@ export function AbsencesPage() {
       ]}
       mapItemToForm={(item) => ({
         ...item,
-        student_id: item.student_id || item.student?.id || '',
-        class_id: item.class_id || item.class?.id || '',
-        subject_id: item.subject_id || item.subject?.id || '',
+        student_id: String(item.student_id || item.student?.id || ''),
+        class_id: String(item.class_id || item.class?.id || ''),
+        subject_id: String(item.subject_id || item.subject?.id || ''),
+        recorded_by: String(item.recorded_by || item.recordedBy?.id || ''),
       })}
       mapFormToPayload={(values) => ({
         ...values,
@@ -124,9 +205,9 @@ export function AbsencesPage() {
         is_justified: Boolean(values.is_justified),
       })}
       emptyState={{
-        title: 'No absences recorded',
-        description: 'Track attendance events to keep presence history complete.',
-        actionLabel: 'Record an absence',
+        title: 'Aucune absence enregistree',
+        description: 'Suivez les absences pour maintenir un historique de presence fiable.',
+        actionLabel: 'Ajouter une absence',
       }}
     />
   );

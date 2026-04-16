@@ -26,12 +26,13 @@ async function withGlobalLoader(request) {
   try {
     return await request();
   } catch (error) {
-    const statusCode = error?.response?.status;
+    const statusCode = error?.status ?? error?.response?.status;
+    const message = error?.message || error?.response?.data?.message;
 
     if (statusCode === 401 || statusCode === 403) {
-      toast.error('Access denied');
+      toast.error('Acces refuse');
     } else {
-      toast.error(error?.response?.data?.message || 'An error occurred');
+      toast.error(message || 'Une erreur est survenue');
     }
 
     throw error;
@@ -56,7 +57,7 @@ export function getResourceService(resourceKey, role) {
     create(payload) {
       return withGlobalLoader(async () => {
         const result = await baseService.create(payload);
-        toast.success('Created successfully');
+        toast.success('Enregistre avec succes');
         return result;
       });
     },
@@ -64,7 +65,7 @@ export function getResourceService(resourceKey, role) {
     update(id, payload) {
       return withGlobalLoader(async () => {
         const result = await baseService.update(id, payload);
-        toast.success('Updated successfully');
+        toast.success('Modifie avec succes');
         return result;
       });
     },
@@ -72,7 +73,7 @@ export function getResourceService(resourceKey, role) {
     remove(id) {
       return withGlobalLoader(async () => {
         const result = await baseService.remove(id);
-        toast.success('Deleted successfully');
+        toast.success('Supprime avec succes');
         return result;
       });
     },

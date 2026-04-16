@@ -15,7 +15,7 @@ class ApiModulesAccessTest extends TestCase
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/users')
+                ->getJson('/api/v1/admin/users')
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonStructure([
@@ -24,12 +24,12 @@ class ApiModulesAccessTest extends TestCase
                 'data' => ['items', 'current_page', 'last_page', 'total'],
             ]);
 
-        $this->actingAs($admin)->getJson('/api/admin/classes')->assertOk();
-        $this->actingAs($admin)->getJson('/api/admin/subjects')->assertOk();
-        $this->actingAs($admin)->getJson('/api/admin/grades')->assertOk();
-        $this->actingAs($admin)->getJson('/api/admin/absences')->assertOk();
-        $this->actingAs($admin)->getJson('/api/admin/report-cards')->assertOk();
-        $this->actingAs($admin)->getJson('/api/admin/events')->assertOk();
+            $this->actingAs($admin)->getJson('/api/v1/admin/classes')->assertOk();
+            $this->actingAs($admin)->getJson('/api/v1/admin/subjects')->assertOk();
+            $this->actingAs($admin)->getJson('/api/v1/admin/grades')->assertOk();
+            $this->actingAs($admin)->getJson('/api/v1/admin/absences')->assertOk();
+            $this->actingAs($admin)->getJson('/api/v1/admin/report-cards')->assertOk();
+            $this->actingAs($admin)->getJson('/api/v1/admin/events')->assertOk();
     }
 
     public function test_teacher_cannot_access_admin_users_endpoint(): void
@@ -37,7 +37,7 @@ class ApiModulesAccessTest extends TestCase
         $teacher = User::factory()->teacher()->create();
 
         $this->actingAs($teacher)
-            ->getJson('/api/admin/users')
+              ->getJson('/api/v1/admin/users')
             ->assertForbidden();
     }
 
@@ -52,11 +52,11 @@ class ApiModulesAccessTest extends TestCase
         ]);
 
         $this->actingAs($student)
-            ->getJson('/api/student/grades')
+                ->getJson('/api/v1/student/grades')
             ->assertOk();
 
         $this->actingAs($parent)
-            ->getJson('/api/parent/children/grades')
+                ->getJson('/api/v1/parent/children/grades')
             ->assertOk();
     }
 }

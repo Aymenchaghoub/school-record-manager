@@ -9,9 +9,10 @@ SchoolRecordManager is a Laravel 11-based educational management system designed
 ### Architectural Pattern
 The application follows a **Domain-Driven MVC Architecture** with clear separation of concerns:
 - **Model Layer**: Eloquent ORM models with relationships and business logic
-- **View Layer**: Blade templates with component-based UI architecture
+- **View Layer**: Hybrid UI during migration (legacy Blade + target React SPA)
 - **Controller Layer**: Thin controllers focused on request/response handling
-- **Service Layer**: Complex business logic extracted to service classes (to be implemented)
+- **Service Layer**: Complex business logic extracted to service classes
+- **API Contract Layer**: Versioned REST API under `/api/v1/*`
 
 ### Domain Structure
 The application is organized into four main domains, each with role-based access control:
@@ -48,7 +49,7 @@ The application is organized into four main domains, each with role-based access
 | Model | Purpose | Key Relationships |
 |-------|---------|------------------|
 | **User** | Central authentication model with role-based access | - teacherClasses, studentClass, parentChildren |
-| **ClassModel** | Academic class representation | - students, subjects, responsibleTeacher |
+| **ClassModel** | Academic class representation | - students, subjects, teacher |
 | **Subject** | Academic subject management | - classes, grades |
 | **Grade** | Student performance tracking | - student, subject, class, teacher |
 | **Absence** | Attendance management | - student, class, recordedBy |
@@ -80,10 +81,10 @@ The application is organized into four main domains, each with role-based access
 
 ### Middleware
 
-- **RoleMiddleware**: Enforces role-based access control
+- **CheckRole**: Enforces role-based access control
   - Validates user authentication
   - Checks role permissions
-  - Verifies account activation status
+   - Returns consistent HTTP 403 responses for unauthorized access
 
 ## Database Schema
 
@@ -131,10 +132,18 @@ The application is organized into four main domains, each with role-based access
 ## Frontend Architecture
 
 ### Technology Stack
-- **Blade Templates**: Server-side rendering
+- **React + Vite SPA**: Target UI layer (served by `/app/{any?}`)
+- **Blade Templates**: Legacy UI in deprecation mode during migration
 - **TailwindCSS**: Utility-first CSS framework
 - **Alpine.js**: Lightweight JavaScript framework
 - **Vite**: Modern asset bundling
+
+## Architecture Decision (ADR-001)
+
+- **Date:** 2026-04-16
+- **Decision:** La SPA React est la cible UI unique.
+- **Reason:** Le maintien simultane Blade + React introduit des divergences comportementales.
+- **Consequences:** Depreciation progressive des vues Blade et stabilisation du contrat API v1 comme source de verite.
 
 ### Component Structure
 - Base layouts for consistency

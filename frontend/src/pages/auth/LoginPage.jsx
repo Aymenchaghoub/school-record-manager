@@ -32,8 +32,8 @@ export function LoginPage() {
       const nextPath = location.state?.from?.pathname || '/dashboard';
       navigate(nextPath, { replace: true });
     } catch (err) {
-      const backendMessage = err?.response?.data?.message;
-      const validationErrors = err?.response?.data?.errors;
+      const backendMessage = err?.message || err?.original?.response?.data?.message;
+      const validationErrors = err?.original?.response?.data?.errors;
       const firstValidationError = validationErrors
         ? Object.values(validationErrors).flat()[0]
         : '';

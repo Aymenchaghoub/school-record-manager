@@ -11,7 +11,7 @@
     {{-- Icon --}}
     @if($icon)
         <div class="w-20 h-20 mb-4 text-gray-300">
-            {!! $icon !!}
+            {{ $icon }}
         </div>
     @else
         <svg class="w-20 h-20 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +33,7 @@
         <a href="{{ $actionUrl }}" 
            class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 font-medium text-sm">
             @if($actionIcon)
-                <span class="mr-2">{!! $actionIcon !!}</span>
+                <span class="mr-2">{{ $actionIcon }}</span>
             @endif
             {{ $actionText }}
         </a>

@@ -21,7 +21,7 @@ export const ROLE_LABELS = {
 
 export const NAV_ITEMS_BY_ROLE = {
   [ROLES.ADMIN]: [
-    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/dashboard', label: 'Tableau de bord' },
     { to: '/users', label: 'Utilisateurs' },
     { to: '/classes', label: 'Classes' },
     { to: '/subjects', label: 'Matieres' },
@@ -31,17 +31,17 @@ export const NAV_ITEMS_BY_ROLE = {
     { to: '/events', label: 'Evenements' },
   ],
   [ROLES.TEACHER]: [
-    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/dashboard', label: 'Tableau de bord' },
     { to: '/grades', label: 'Notes' },
     { to: '/absences', label: 'Absences' },
   ],
   [ROLES.STUDENT]: [
-    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/dashboard', label: 'Tableau de bord' },
     { to: '/grades', label: 'Mes notes' },
     { to: '/absences', label: 'Mes absences' },
   ],
   [ROLES.PARENT]: [
-    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/dashboard', label: 'Tableau de bord' },
     { to: '/grades', label: 'Notes enfants' },
     { to: '/absences', label: 'Absences enfants' },
   ],
@@ -50,43 +50,47 @@ export const NAV_ITEMS_BY_ROLE = {
 export const API_ENDPOINTS = {
   auth: {
     csrf: '/sanctum/csrf-cookie',
-    loginCandidates: ['/api/login', '/login'],
-    meCandidates: ['/api/user'],
-    logoutCandidates: ['/api/logout', '/logout'],
+    loginCandidates: ['/api/v1/login', '/api/login', '/login'],
+    meCandidates: ['/api/v1/user', '/api/user'],
+    logoutCandidates: ['/api/v1/logout', '/api/logout', '/logout'],
   },
   dashboard: {
-    [ROLES.ADMIN]: '/api/admin/dashboard',
-    [ROLES.TEACHER]: '/api/teacher/dashboard',
-    [ROLES.STUDENT]: '/api/student/dashboard',
-    [ROLES.PARENT]: '/api/parent/dashboard',
+    [ROLES.ADMIN]: '/api/v1/admin/dashboard',
+    [ROLES.TEACHER]: '/api/v1/teacher/dashboard',
+    [ROLES.STUDENT]: '/api/v1/student/dashboard',
+    [ROLES.PARENT]: '/api/v1/parent/dashboard',
   },
   resources: {
     users: {
-      [ROLES.ADMIN]: '/api/admin/users',
+      [ROLES.ADMIN]: '/api/v1/admin/users',
     },
     classes: {
-      [ROLES.ADMIN]: '/api/admin/classes',
+      [ROLES.ADMIN]: '/api/v1/admin/classes',
+      [ROLES.TEACHER]: '/api/v1/teacher/classes',
     },
     subjects: {
-      [ROLES.ADMIN]: '/api/admin/subjects',
+      [ROLES.ADMIN]: '/api/v1/admin/subjects',
+      [ROLES.TEACHER]: '/api/v1/teacher/subjects',
     },
     grades: {
-      [ROLES.ADMIN]: '/api/admin/grades',
-      [ROLES.TEACHER]: '/api/teacher/grades',
-      [ROLES.STUDENT]: '/api/student/grades',
-      [ROLES.PARENT]: '/api/parent/children/grades',
+      [ROLES.ADMIN]: '/api/v1/admin/grades',
+      [ROLES.TEACHER]: '/api/v1/teacher/grades',
+      [ROLES.STUDENT]: '/api/v1/student/grades',
+      [ROLES.PARENT]: '/api/v1/parent/children/grades',
     },
     absences: {
-      [ROLES.ADMIN]: '/api/admin/absences',
-      [ROLES.TEACHER]: '/api/teacher/absences',
-      [ROLES.STUDENT]: '/api/student/absences',
-      [ROLES.PARENT]: '/api/parent/children/absences',
+      [ROLES.ADMIN]: '/api/v1/admin/absences',
+      [ROLES.TEACHER]: '/api/v1/teacher/absences',
+      [ROLES.STUDENT]: '/api/v1/student/absences',
+      [ROLES.PARENT]: '/api/v1/parent/children/absences',
     },
     reportCards: {
-      [ROLES.ADMIN]: '/api/admin/report-cards',
+      [ROLES.ADMIN]: '/api/v1/admin/report-cards',
     },
     events: {
-      [ROLES.ADMIN]: '/api/admin/events',
+      [ROLES.ADMIN]: '/api/v1/admin/events',
+      [ROLES.TEACHER]: '/api/v1/teacher/events',
+      [ROLES.PARENT]: '/api/v1/parent/events',
     },
   },
 };

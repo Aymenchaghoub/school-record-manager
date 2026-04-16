@@ -49,14 +49,14 @@ export function ConfirmModal({
 
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={onCancel} disabled={isConfirming}>
-            Cancel
+            Annuler
           </Button>
           <Button
             variant={danger ? 'danger' : 'primary'}
             onClick={onConfirm}
             isLoading={isConfirming}
           >
-            {confirmLabel || 'Confirm'}
+            {confirmLabel || 'Confirmer'}
           </Button>
         </div>
       </div>

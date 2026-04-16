@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
+import apiClient from '../../services/apiClient';
 import { createSubjectsService } from '../../services/subjectsService';
 import { ROLES } from '../../utils/constants';
+import { parseListResponse } from '../../utils/response';
 
 const typeOptions = [
   { value: 'core', label: 'Tronc commun' },
@@ -14,6 +16,7 @@ const typeOptions = [
 export function SubjectsPage() {
   const { user } = useAuth();
   const role = user?.role;
+  const [teacherOptions, setTeacherOptions] = useState([{ value: '', label: 'Selectionner un enseignant' }]);
 
   const service = useMemo(
     () => createSubjectsService(role || ROLES.ADMIN),
@@ -21,6 +24,30 @@ export function SubjectsPage() {
   );
 
   const isAdmin = role === ROLES.ADMIN;
+
+  useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+
+    const loadTeachers = async () => {
+      try {
+        const response = await apiClient.get('/api/v1/admin/users', {
+          params: { role: 'teacher', per_page: 100 },
+        });
+        const teachers = parseListResponse(response.data?.data || response.data).items;
+
+        setTeacherOptions([
+          { value: '', label: 'Selectionner un enseignant' },
+          ...teachers.map((teacher) => ({ value: String(teacher.id), label: teacher.name })),
+        ]);
+      } catch {
+        setTeacherOptions([{ value: '', label: 'Selectionner un enseignant' }]);
+      }
+    };
+
+    loadTeachers();
+  }, [isAdmin]);
 
   return (
     <CrudPage
@@ -40,13 +67,17 @@ export function SubjectsPage() {
           render: (item) => <Badge tone="brand">{item.type || '-'}</Badge>,
         },
         { key: 'credits', label: 'Credits' },
-        { key: 'teacher_id', label: 'ID enseignant' },
+        {
+          key: 'teacher',
+          label: 'Enseignant',
+          render: (item) => item.teacher?.name || item.teacher_name || '-',
+        },
         {
           key: 'is_active',
           label: 'Etat',
           render: (item) => (
             <Badge tone={item.is_active ? 'success' : 'danger'}>
-              {item.is_active ? 'Active' : 'Inactive'}
+              {item.is_active ? 'Actif' : 'Inactif'}
             </Badge>
           ),
         },
@@ -56,10 +87,14 @@ export function SubjectsPage() {
         { name: 'code', label: 'Code', required: true },
         { name: 'type', label: 'Type', type: 'select', required: true, options: typeOptions },
         { name: 'credits', label: 'Credits', type: 'number', defaultValue: 1, required: true },
-        { name: 'teacher_id', label: 'ID enseignant', type: 'number' },
+        { name: 'teacher_id', label: 'Enseignant', type: 'select', options: teacherOptions },
         { name: 'description', label: 'Description', type: 'textarea' },
         { name: 'is_active', label: 'Matiere active', type: 'checkbox', defaultValue: true },
       ]}
+      mapItemToForm={(item) => ({
+        ...item,
+        teacher_id: String(item.teacher_id || item.teacher?.id || ''),
+      })}
       mapFormToPayload={(values) => ({
         ...values,
         credits: Number(values.credits || 1),

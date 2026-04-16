@@ -30,7 +30,7 @@ class AbsenceManagementTest extends TestCase
         
         // Create class
         $this->class = ClassModel::factory()->create([
-            'responsible_teacher_id' => $this->teacher->id,
+            'teacher_id' => $this->teacher->id,
         ]);
         
         // Create subject

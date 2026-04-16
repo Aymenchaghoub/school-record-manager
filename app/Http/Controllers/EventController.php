@@ -11,7 +11,7 @@ class EventController extends Controller
     // Admin methods
     public function index()
     {
-        $events = Event::orderBy('event_date', 'desc')->paginate(20);
+        $events = Event::orderBy('start_date', 'desc')->paginate(20);
         return view('admin.events.index', compact('events'));
     }
 
@@ -22,21 +22,23 @@ class EventController extends Controller
 
     public function store(Request $request)
     {
+        $this->mergeLegacyPayload($request);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'event_date' => 'required|date',
-            'event_time' => 'nullable|string',
+            'type' => 'required|in:exam,meeting,holiday,sports,cultural,parent_meeting,other',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'location' => 'nullable|string|max:255',
-            'event_type' => 'required|string|max:255',
+            'class_id' => 'nullable|exists:classes,id',
             'target_audience' => 'required|array',
             'target_audience.*' => 'in:all,admin,teacher,student,parent',
-            'is_mandatory' => 'boolean',
+            'is_public' => 'boolean',
             'is_published' => 'boolean'
         ]);
 
         $validated['created_by'] = Auth::id();
-        $validated['target_audience'] = json_encode($validated['target_audience']);
         
         Event::create($validated);
 
@@ -56,20 +58,21 @@ class EventController extends Controller
 
     public function update(Request $request, Event $event)
     {
+        $this->mergeLegacyPayload($request);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'event_date' => 'required|date',
-            'event_time' => 'nullable|string',
+            'type' => 'required|in:exam,meeting,holiday,sports,cultural,parent_meeting,other',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'location' => 'nullable|string|max:255',
-            'event_type' => 'required|string|max:255',
+            'class_id' => 'nullable|exists:classes,id',
             'target_audience' => 'required|array',
             'target_audience.*' => 'in:all,admin,teacher,student,parent',
-            'is_mandatory' => 'boolean',
+            'is_public' => 'boolean',
             'is_published' => 'boolean'
         ]);
-
-        $validated['target_audience'] = json_encode($validated['target_audience']);
         
         $event->update($validated);
 
@@ -110,10 +113,27 @@ class EventController extends Controller
                 $query->whereJsonContains('target_audience', 'all')
                       ->orWhereJsonContains('target_audience', 'parent');
             })
-            ->where('event_date', '>=', now())
-            ->orderBy('event_date', 'asc')
+            ->where('start_date', '>=', now())
+            ->orderBy('start_date', 'asc')
             ->paginate(20);
 
         return view('parent.events.index', compact('events'));
+    }
+
+    private function mergeLegacyPayload(Request $request): void
+    {
+        $startDate = $request->input('start_date');
+
+        if (! $startDate && $request->filled('event_date')) {
+            $eventDate = $request->input('event_date');
+            $eventTime = $request->input('event_time', '08:00');
+            $startDate = trim("{$eventDate} {$eventTime}");
+        }
+
+        $request->merge([
+            'start_date' => $startDate,
+            'type' => $request->input('type', $request->input('event_type')),
+            'is_public' => $request->boolean('is_public', true),
+        ]);
     }
 }

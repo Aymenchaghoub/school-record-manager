@@ -16,7 +16,7 @@
             {{-- Icon --}}
             @if($icon)
                 <div class="w-24 h-24 mx-auto mb-6 text-primary-500">
-                    {!! $icon !!}
+                    {{ $icon }}
                 </div>
             @else
                 <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center">

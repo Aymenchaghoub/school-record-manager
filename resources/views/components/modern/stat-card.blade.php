@@ -51,7 +51,7 @@
             @if($icon)
                 <div class="flex-shrink-0 ml-4">
                     <div class="p-3 bg-gradient-to-br {{ $gradient ? $colorClasses : 'from-gray-100 to-gray-200' }} rounded-xl text-white">
-                        {!! $icon !!}
+                        {{ $icon }}
                     </div>
                 </div>
             @endif

@@ -63,8 +63,8 @@ export function DashboardPage() {
       } catch (err) {
         if (isMounted) {
           setError(
-            err?.response?.data?.message ||
-              'Impossible de charger les donnees dashboard. Configurez les endpoints API Laravel.'
+            err?.message ||
+              'Impossible de charger les donnees du tableau de bord.'
           );
         }
       } finally {
@@ -86,16 +86,16 @@ export function DashboardPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Dashboard"
+        title="Tableau de bord"
         description="Vue d'ensemble adaptee a votre role"
       />
 
-      {isLoading ? <Spinner label="Chargement du dashboard..." /> : null}
+      {isLoading ? <Spinner label="Chargement du tableau de bord..." /> : null}
       {error ? <Alert variant="warning">{error}</Alert> : null}
       {showEmptyState ? (
         <EmptyState
-          title="No data available yet"
-          description="Dashboard metrics will appear once activity data is available."
+          title="Aucune donnee disponible"
+          description="Les indicateurs apparaitront des que des activites seront enregistrees."
         />
       ) : null}
       {!isLoading && !showEmptyState ? renderRoleDashboard(user?.role, payload) : null}

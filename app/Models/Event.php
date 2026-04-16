@@ -13,9 +13,6 @@ class Event extends Model
         'title',
         'description',
         'type',
-        'event_type',
-        'event_date',
-        'event_time',
         'start_date',
         'end_date',
         'location',
@@ -28,7 +25,6 @@ class Event extends Model
     ];
 
     protected $casts = [
-        'event_date' => 'date',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'is_public' => 'boolean',
@@ -185,5 +181,29 @@ class Event extends Model
             'parent_meeting' => 'users',
             default => 'flag',
         };
+    }
+
+    /**
+     * Backward-compatible computed date from canonical start_date.
+     */
+    public function getEventDateAttribute(): ?string
+    {
+        return $this->start_date?->toDateString();
+    }
+
+    /**
+     * Backward-compatible computed time from canonical start_date.
+     */
+    public function getEventTimeAttribute(): ?string
+    {
+        return $this->start_date?->format('H:i:s');
+    }
+
+    /**
+     * Backward-compatible computed type alias.
+     */
+    public function getEventTypeAttribute(): ?string
+    {
+        return $this->type;
     }
 }

@@ -4,22 +4,9 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Models\User;
-use App\Models\ClassModel;
-use App\Models\Subject;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class UIConsistencyTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        // Seed basic data
-        $this->seed(\Database\Seeders\DatabaseSeeder::class);
-    }
-
     /**
      * Test admin pages render correctly
      */

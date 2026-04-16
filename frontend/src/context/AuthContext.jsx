@@ -36,7 +36,8 @@ export function AuthProvider({ children }) {
       const currentUser = await authService.getCurrentUser();
       applyUser(currentUser || null);
     } catch (error) {
-      if (error?.response?.status !== 401) {
+      const status = error?.status ?? error?.response?.status;
+      if (status !== 401) {
         console.error('Failed to bootstrap authenticated user', error);
       }
 
@@ -66,8 +67,12 @@ export function AuthProvider({ children }) {
       applyUser(null);
     };
 
+    window.addEventListener('unauthorized', handleUnauthorized);
     window.addEventListener('auth:unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
   }, [applyUser]);
 
   const value = useMemo(

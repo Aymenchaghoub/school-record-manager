@@ -45,7 +45,7 @@
     
     @if($icon)
         <span class="flex-shrink-0 mr-1.5">
-            {!! $icon !!}
+            {{ $icon }}
         </span>
     @endif
     

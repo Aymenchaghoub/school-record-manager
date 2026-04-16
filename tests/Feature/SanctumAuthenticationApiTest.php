@@ -53,7 +53,7 @@ class SanctumAuthenticationApiTest extends TestCase
         $this->primeCsrfCookie();
 
         $loginResponse = $this->withHeader('Origin', 'http://localhost:5173')
-            ->postJson('/api/login', [
+            ->postJson('/api/v1/login', [
                 'email' => 'api-user@example.com',
                 'password' => 'password',
                 'remember' => true,
@@ -64,7 +64,7 @@ class SanctumAuthenticationApiTest extends TestCase
             ->assertJsonPath('user.email', 'api-user@example.com');
 
         $userResponse = $this->withHeader('Origin', 'http://localhost:5173')
-            ->getJson('/api/user');
+            ->getJson('/api/v1/user');
 
         $userResponse
             ->assertOk()
@@ -85,7 +85,7 @@ class SanctumAuthenticationApiTest extends TestCase
         $this->primeCsrfCookie();
 
         $response = $this->withHeader('Origin', 'http://localhost:5173')
-            ->postJson('/api/login', [
+            ->postJson('/api/v1/login', [
                 'email' => 'api-user@example.com',
                 'password' => 'wrong-password',
             ]);
@@ -107,20 +107,20 @@ class SanctumAuthenticationApiTest extends TestCase
         $this->primeCsrfCookie();
 
         $this->withHeader('Origin', 'http://localhost:5173')
-            ->postJson('/api/login', [
+            ->postJson('/api/v1/login', [
                 'email' => 'api-user@example.com',
                 'password' => 'password',
             ])
             ->assertOk();
 
         $this->withHeader('Origin', 'http://localhost:5173')
-            ->postJson('/api/logout')
+            ->postJson('/api/v1/logout')
             ->assertOk();
 
         $this->refreshApplication();
 
         $this->withHeader('Origin', 'http://localhost:5173')
-            ->getJson('/api/user')
+            ->getJson('/api/v1/user')
             ->assertStatus(401);
     }
 }

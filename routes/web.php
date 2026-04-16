@@ -20,9 +20,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Public routes
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::redirect('/', '/login');
 
 // Authentication routes
 Route::middleware('guest')->group(function () {
@@ -72,6 +70,8 @@ Route::middleware('auth')->group(function () {
     // Teacher routes
     Route::middleware(['role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/classes', [GradeController::class, 'myClasses'])->name('classes');
         
         // Grade management
         Route::get('/grades', [GradeController::class, 'index'])->name('grades.index');
@@ -102,6 +102,13 @@ Route::middleware('auth')->group(function () {
         
         // Absences
         Route::get('/absences', [StudentGradeController::class, 'absences'])->name('absences');
+
+        // Report cards
+        Route::get('/report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
+        Route::get('/report-cards/{reportCard}', [ReportCardController::class, 'show'])->name('report-cards.show');
+        Route::get('/report-cards/{reportCard}/download', [ReportCardController::class, 'download'])->name('report-cards.download');
+
+        Route::get('/events', [EventController::class, 'studentEvents'])->name('events');
     });
     
     // Parent routes
@@ -113,6 +120,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/children/{child}', [ChildrenController::class, 'show'])->name('children.show');
         Route::get('/children/{child}/grades', [ChildrenController::class, 'grades'])->name('children.grades');
         Route::get('/children/{child}/absences', [ChildrenController::class, 'absences'])->name('children.absences');
+        Route::get('/children/{child}/report-cards', [ChildrenController::class, 'reportCards'])->name('children.report-cards');
+        Route::get('/children/{child}/report-cards/{reportCard}', [ChildrenController::class, 'viewReportCard'])->name('children.report-card');
+
+        Route::get('/events', [EventController::class, 'parentEvents'])->name('events');
     });
     
     // Shared routes for authenticated users
@@ -120,3 +131,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/show', [AuthController::class, 'profile'])->name('profile.show');
     Route::put('/profile', [AuthController::class, 'updateProfile'])->name('profile.update');
 });
+
+Route::get('/app/{any?}', function () {
+    return view('app');
+})->where('any', '.*');

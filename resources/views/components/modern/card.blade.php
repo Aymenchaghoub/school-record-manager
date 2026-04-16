@@ -23,7 +23,7 @@
                     @if($icon)
                         <div class="flex-shrink-0">
                             <div class="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl text-white">
-                                {!! $icon !!}
+                                {{ $icon }}
                             </div>
                         </div>
                     @endif

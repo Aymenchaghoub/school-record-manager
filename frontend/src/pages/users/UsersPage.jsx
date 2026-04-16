@@ -84,12 +84,12 @@ export function UsersPage() {
 
         return payload;
       }}
-      searchPlaceholder="Search users by name..."
+      searchPlaceholder="Rechercher un utilisateur par nom..."
       searchDebounceMs={300}
       emptyState={{
-        title: 'No users found',
-        description: 'Create your first account to start managing the platform.',
-        actionLabel: 'Add your first user',
+        title: 'Aucun utilisateur trouve',
+        description: 'Creez un premier compte pour demarrer la gestion de la plateforme.',
+        actionLabel: 'Ajouter un utilisateur',
       }}
     />
   );

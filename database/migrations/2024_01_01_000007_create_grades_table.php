@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('class_id');
             $table->unsignedBigInteger('teacher_id');
             $table->decimal('value', 5, 2);
-            $table->decimal('max_value', 5, 2)->default(100);
+            $table->decimal('max_value', 5, 2)->default(20);
             $table->enum('type', ['exam', 'quiz', 'assignment', 'project', 'participation', 'midterm', 'final']);
             $table->string('title')->nullable();
             $table->date('grade_date');

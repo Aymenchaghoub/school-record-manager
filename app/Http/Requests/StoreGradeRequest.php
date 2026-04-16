@@ -11,7 +11,7 @@ class StoreGradeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return in_array($this->user()->role, ['admin', 'teacher']);
+        return in_array($this->user()?->role, ['admin', 'teacher'], true);
     }
 
     /**
@@ -23,10 +23,14 @@ class StoreGradeRequest extends FormRequest
             'student_id' => ['required', 'exists:users,id'],
             'subject_id' => ['required', 'exists:subjects,id'],
             'class_id' => ['required', 'exists:classes,id'],
-            'grade' => ['required', 'numeric', 'min:0', 'max:100'],
-            'exam_type' => ['required', 'string', 'max:255'],
-            'semester' => ['required', 'integer', 'min:1', 'max:2'],
-            'academic_year' => ['required', 'string', 'max:255'],
+            'teacher_id' => ['nullable', 'exists:users,id'],
+            'value' => ['required', 'numeric', 'min:0', 'max:20'],
+            'max_value' => ['nullable', 'numeric', 'in:20'],
+            'type' => ['required', 'in:exam,quiz,assignment,project,participation,midterm,final'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'grade_date' => ['required', 'date'],
+            'term' => ['nullable', 'string', 'max:255'],
+            'weight' => ['nullable', 'numeric', 'gt:0'],
             'comment' => ['nullable', 'string', 'max:500'],
         ];
     }
@@ -37,10 +41,8 @@ class StoreGradeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'grade.min' => 'Grade cannot be negative.',
-            'grade.max' => 'Grade cannot exceed 100.',
-            'semester.min' => 'Invalid semester number.',
-            'semester.max' => 'Invalid semester number.',
+            'value.min' => 'La note ne peut pas etre negative.',
+            'value.max' => 'La note ne peut pas depasser 20.',
         ];
     }
 }

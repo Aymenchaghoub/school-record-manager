@@ -8,10 +8,10 @@ import { ROLES } from '../../utils/constants';
 const conductOptions = [
   { value: '', label: 'Selectionner' },
   { value: 'Excellent', label: 'Excellent' },
-  { value: 'Very Good', label: 'Very Good' },
-  { value: 'Good', label: 'Good' },
-  { value: 'Fair', label: 'Fair' },
-  { value: 'Poor', label: 'Poor' },
+  { value: 'Tres bien', label: 'Tres bien' },
+  { value: 'Bien', label: 'Bien' },
+  { value: 'Assez bien', label: 'Assez bien' },
+  { value: 'Insuffisant', label: 'Insuffisant' },
 ];
 
 export function ReportCardsPage() {
@@ -65,7 +65,7 @@ export function ReportCardsPage() {
         { name: 'term', label: 'Periode', required: true },
         { name: 'academic_year', label: 'Annee academique', required: true },
         { name: 'overall_average', label: 'Moyenne generale', type: 'number' },
-        { name: 'total_absences', label: 'Total absences', type: 'number', defaultValue: 0 },
+        { name: 'total_absences', label: 'Total des absences', type: 'number', defaultValue: 0 },
         { name: 'justified_absences', label: 'Absences justifiees', type: 'number', defaultValue: 0 },
         { name: 'rank_in_class', label: 'Rang', type: 'number' },
         { name: 'total_students', label: 'Total eleves', type: 'number' },

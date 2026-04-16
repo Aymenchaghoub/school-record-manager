@@ -87,12 +87,12 @@ export function StudentDashboard({ payload }) {
       labels: evolutionSeries.labels,
       datasets: [
         {
-          label: 'Grade',
+          label: 'Note',
           data: evolutionSeries.data,
-          borderColor: 'rgba(139, 92, 246, 1)',
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
+          borderColor: 'rgba(14, 116, 144, 1)',
+          backgroundColor: 'rgba(14, 116, 144, 0.2)',
           tension: 0.35,
-          pointBackgroundColor: 'rgba(139, 92, 246, 1)',
+          pointBackgroundColor: 'rgba(14, 116, 144, 1)',
           pointRadius: 4,
         },
       ],
@@ -123,27 +123,27 @@ export function StudentDashboard({ payload }) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-        <StatCard label="My Average Grade" value={averageGrade} accent="cyan" />
-        <StatCard label="My Total Absences" value={totalAbsences} accent="rose" />
+        <StatCard label="Ma moyenne generale" value={averageGrade} accent="cyan" />
+        <StatCard label="Mes absences" value={totalAbsences} accent="rose" />
       </div>
 
       <div className="surface-card p-4">
         <h3 className="text-base font-semibold" style={{ color: 'var(--fg)' }}>
-          Grade Evolution
+          Evolution des notes
         </h3>
 
         <div className="relative mt-4 h-[300px]">
           {isEvolutionLoading ? (
             <div className="flex h-full items-center justify-center">
-              <Spinner label="Loading chart..." />
+              <Spinner label="Chargement du graphique..." />
             </div>
           ) : null}
 
           {!isEvolutionLoading && evolutionError ? (
             <div className="h-full">
               <EmptyState
-                title="Unable to load grade evolution"
-                description="Your grade evolution could not be loaded right now."
+                title="Impossible de charger l'evolution des notes"
+                description="L'evolution de vos notes est indisponible pour le moment."
               />
             </div>
           ) : null}
@@ -151,8 +151,8 @@ export function StudentDashboard({ payload }) {
           {!isEvolutionLoading && !evolutionError && !hasChartData(evolutionSeries) ? (
             <div className="h-full">
               <EmptyState
-                title="No grade data available yet"
-                description="Your grade evolution chart will appear once grades are recorded."
+                title="Aucune note disponible"
+                description="Le graphique s'affichera des que des notes seront enregistrees."
               />
             </div>
           ) : null}

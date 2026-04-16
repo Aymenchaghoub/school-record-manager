@@ -205,7 +205,7 @@ export function CrudPage({
     setSuccessMessage('');
 
     const loadingToastId = toast.loading(
-      editingItem ? 'Updating record...' : 'Creating record...'
+      editingItem ? 'Mise a jour en cours...' : 'Creation en cours...'
     );
 
     try {
@@ -323,9 +323,9 @@ export function CrudPage({
         ) : items.length === 0 ? (
           <EmptyState
             icon={emptyState?.icon}
-            title={emptyState?.title || 'No results found'}
+            title={emptyState?.title || 'Aucun resultat'}
             description={
-              emptyState?.description || 'Try adjusting your search or create a new record.'
+              emptyState?.description || 'Ajustez vos filtres ou creez un nouvel enregistrement.'
             }
             actionLabel={canCreate ? emptyState?.actionLabel : undefined}
             onAction={canCreate ? (emptyState?.onAction || openCreateModal) : undefined}
@@ -358,12 +358,12 @@ export function CrudPage({
                       <td className="px-3 py-3">
                         <div className="flex gap-2">
                           {canEdit ? (
-                            <Button variant="subtle" onClick={() => openEditModal(item)}>
-                              Editer
+                            <Button variant="subtle" onClick={() => openEditModal(item)} aria-label="Modifier cet element">
+                              Modifier
                             </Button>
                           ) : null}
                           {canDelete ? (
-                            <Button variant="danger" onClick={() => openDeleteConfirm(item[idKey])}>
+                            <Button variant="danger" onClick={() => openDeleteConfirm(item[idKey])} aria-label="Supprimer cet element">
                               Supprimer
                             </Button>
                           ) : null}
@@ -465,9 +465,9 @@ export function CrudPage({
 
       <ConfirmModal
         isOpen={isConfirmOpen}
-        title="Confirm deletion"
-        message="Are you sure you want to delete this record? This action cannot be undone."
-        confirmLabel="Delete"
+        title="Confirmer la suppression"
+        message="Etes-vous sur de vouloir supprimer cet enregistrement ? Cette action est irreversible."
+        confirmLabel="Supprimer"
         onConfirm={confirmDelete}
         onCancel={closeDeleteConfirm}
         danger

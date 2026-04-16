@@ -31,7 +31,7 @@ export function AppLayout() {
       {sidebarOpen ? (
         <button
           type="button"
-          aria-label="Close sidebar overlay"
+          aria-label="Fermer le panneau lateral"
           onClick={() => setSidebarOpen(false)}
           className="fixed inset-0 z-30 bg-slate-900/40 md:hidden"
         />

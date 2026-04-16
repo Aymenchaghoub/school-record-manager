@@ -24,3 +24,7 @@ yarn-error.log
 package-lock.json
 yarn.lock
 composer.lock
+database/migrations/2026_04_09_181108_create_cache_table.php
+database/migrations/2026_04_09_181108_create_sessions_table.php
+database/migrations/2026_04_09_181109_create_failed_jobs_table.php
+database/migrations/2026_04_09_181109_create_jobs_table.php

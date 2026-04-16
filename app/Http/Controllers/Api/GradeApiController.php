@@ -8,6 +8,8 @@ use App\Http\Requests\Api\Grades\StoreGradeRequest;
 use App\Http\Requests\Api\Grades\UpdateGradeRequest;
 use App\Models\Grade;
 use App\Models\User;
+use App\Services\ActivityLogger;
+use App\Services\GradeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +17,10 @@ use Illuminate\Http\Request;
 class GradeApiController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(private readonly GradeService $gradeService)
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -81,7 +87,13 @@ class GradeApiController extends Controller
         $validated = $request->validated();
         $payload = $this->normalizePayload($validated, $request->user(), false);
 
-        $grade = Grade::create($payload);
+        $grade = $this->gradeService->create($payload);
+
+        ActivityLogger::grade('created', (int) $request->user()->id, [
+            'grade_id' => $grade->id,
+            'student_id' => $grade->student_id,
+            'subject_id' => $grade->subject_id,
+        ]);
 
         return $this->success(
             $grade->load(['student:id,name,email', 'subject:id,name,code', 'class:id,name,code', 'teacher:id,name,email']),
@@ -116,7 +128,7 @@ class GradeApiController extends Controller
         $validated = $request->validated();
         $payload = $this->normalizePayload($validated, $request->user(), true);
 
-        $ownedGrade->update($payload);
+        $ownedGrade = $this->gradeService->update($ownedGrade, $payload);
 
         return $this->success(
             $ownedGrade->fresh()->load(['student:id,name,email', 'subject:id,name,code', 'class:id,name,code', 'teacher:id,name,email']),
@@ -148,12 +160,12 @@ class GradeApiController extends Controller
         }
 
         if ($user->isTeacher()) {
-            $query->where('teacher_id', $user->id);
+            $query->where('grades.teacher_id', $user->id);
             return;
         }
 
         if ($user->isStudent()) {
-            $query->where('student_id', $user->id);
+            $query->where('grades.student_id', $user->id);
             return;
         }
 
@@ -165,7 +177,7 @@ class GradeApiController extends Controller
                 return;
             }
 
-            $query->whereIn('student_id', $childIds);
+            $query->whereIn('grades.student_id', $childIds);
             return;
         }
 
@@ -199,14 +211,6 @@ class GradeApiController extends Controller
             $validated['teacher_id'] = $user->id;
         } elseif (! $isUpdate && empty($validated['teacher_id'])) {
             $validated['teacher_id'] = $user->id;
-        }
-
-        if (! $isUpdate && ! isset($validated['max_value'])) {
-            $validated['max_value'] = 100;
-        }
-
-        if (! $isUpdate && ! isset($validated['weight'])) {
-            $validated['weight'] = 1;
         }
 
         return $validated;

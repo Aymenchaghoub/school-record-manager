@@ -9,12 +9,17 @@ use App\Models\Grade;
 use App\Models\Absence;
 use App\Models\Event;
 use App\Models\ReportCard;
+use App\Services\GradeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly GradeService $gradeService)
+    {
+    }
+
     /**
      * Show the dashboard based on user role
      */
@@ -56,21 +61,25 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        // Performance metrics
-        $classPerformance = ClassModel::with('students')
+        // Performance metrics (grouped to avoid N+1 lookups)
+        $activeClasses = ClassModel::query()
             ->where('is_active', true)
-            ->get()
-            ->map(function ($class) {
-                $averageGrade = Grade::whereIn('student_id', $class->students->pluck('id'))
-                    ->where('class_id', $class->id)
-                    ->avg('value');
-                
-                return [
-                    'class' => $class,
-                    'average_grade' => $averageGrade ? round(($averageGrade / 100) * 100, 2) : 0,
-                    'student_count' => $class->students->count(),
-                ];
-            });
+            ->withCount('students')
+            ->get();
+
+        $classAverages = Grade::query()
+            ->whereIn('class_id', $activeClasses->pluck('id'))
+            ->selectRaw('class_id, AVG(value) as average_grade')
+            ->groupBy('class_id')
+            ->pluck('average_grade', 'class_id');
+
+        $classPerformance = $activeClasses->map(function ($class) use ($classAverages) {
+            return [
+                'class' => $class,
+                'average_grade' => round((float) ($classAverages[$class->id] ?? 0), 2),
+                'student_count' => (int) $class->students_count,
+            ];
+        });
 
         // Absence trends (last 30 days)
         $absenceTrends = Absence::select(DB::raw('DATE(absence_date) as date'), DB::raw('COUNT(*) as count'))
@@ -141,19 +150,23 @@ class DashboardController extends Controller
         ->limit(5)
         ->get();
 
-        $classesWithHighAbsences = [];
-        foreach ($myClasses as $class) {
-            $absenceCount = Absence::where('class_id', $class->id)
-                ->whereDate('absence_date', today())
-                ->count();
-            
-            if ($absenceCount > 3) {
-                $classesWithHighAbsences[] = [
+        $absenceCounts = Absence::query()
+            ->whereIn('class_id', $myClasses->pluck('id'))
+            ->whereDate('absence_date', today())
+            ->selectRaw('class_id, COUNT(*) as total')
+            ->groupBy('class_id')
+            ->pluck('total', 'class_id');
+
+        $classesWithHighAbsences = $myClasses
+            ->map(function ($class) use ($absenceCounts) {
+                return [
                     'class' => $class,
-                    'absence_count' => $absenceCount,
+                    'absence_count' => (int) ($absenceCounts[$class->id] ?? 0),
                 ];
-            }
-        }
+            })
+            ->filter(fn (array $item) => $item['absence_count'] > 3)
+            ->values()
+            ->all();
 
         return view('teacher.dashboard', compact(
             'stats',
@@ -193,10 +206,18 @@ class DashboardController extends Controller
         
         // Calculate class rank
         $classStudents = $currentClass->students()->get();
-        $studentAverages = [];
+        $studentAverages = Grade::query()
+            ->whereIn('student_id', $classStudents->pluck('id'))
+            ->selectRaw('student_id, AVG((value / NULLIF(max_value, 0)) * 100) as average')
+            ->groupBy('student_id')
+            ->pluck('average', 'student_id')
+            ->map(fn ($value) => round((float) $value, 2))
+            ->all();
+
         foreach ($classStudents as $classStudent) {
-            $studentAverages[$classStudent->id] = $this->calculateStudentAverage($classStudent->id);
+            $studentAverages[$classStudent->id] = $studentAverages[$classStudent->id] ?? 0;
         }
+
         arsort($studentAverages); // Sort descending by average
         $rank = array_search($student->id, array_keys($studentAverages)) + 1;
         $totalStudents = count($studentAverages);
@@ -223,16 +244,27 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $subjectAverages = [];
-        foreach ($currentClass->subjects as $subject) {
-            $average = $subject->getAverageGrade($student->id, $currentClass->id);
-            if ($average !== null) {
-                $subjectAverages[] = [
+        $subjectAverageMap = Grade::query()
+            ->where('student_id', $student->id)
+            ->where('class_id', $currentClass->id)
+            ->selectRaw('subject_id, AVG((value / NULLIF(max_value, 0)) * 100) as average')
+            ->groupBy('subject_id')
+            ->pluck('average', 'subject_id');
+
+        $subjectAverages = $currentClass->subjects
+            ->map(function ($subject) use ($subjectAverageMap) {
+                if (! isset($subjectAverageMap[$subject->id])) {
+                    return null;
+                }
+
+                return [
                     'subject' => $subject,
-                    'average' => $average,
+                    'average' => round((float) $subjectAverageMap[$subject->id], 2),
                 ];
-            }
-        }
+            })
+            ->filter()
+            ->values()
+            ->all();
 
         $upcomingEvents = Event::where(function ($query) use ($currentClass) {
             $query->whereNull('class_id')
@@ -317,21 +349,6 @@ class DashboardController extends Controller
      */
     private function calculateStudentAverage($studentId)
     {
-        $grades = Grade::where('student_id', $studentId)->get();
-        
-        if ($grades->isEmpty()) {
-            return 0;
-        }
-
-        $totalWeightedScore = 0;
-        $totalWeight = 0;
-
-        foreach ($grades as $grade) {
-            $normalizedScore = ($grade->value / $grade->max_value) * 100;
-            $totalWeightedScore += $normalizedScore * $grade->weight;
-            $totalWeight += $grade->weight;
-        }
-
-        return $totalWeight > 0 ? round($totalWeightedScore / $totalWeight, 2) : 0;
+        return $this->gradeService->overallAverageForStudent((int) $studentId);
     }
 }

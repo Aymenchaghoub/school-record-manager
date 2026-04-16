@@ -30,7 +30,7 @@ class GradeManagementTest extends TestCase
         
         // Create class
         $this->class = ClassModel::factory()->create([
-            'responsible_teacher_id' => $this->teacher->id,
+            'teacher_id' => $this->teacher->id,
         ]);
         
         // Create subject
@@ -77,8 +77,8 @@ class GradeManagementTest extends TestCase
                 'student_id' => $this->student->id,
                 'subject_id' => $this->subject->id,
                 'class_id' => $this->class->id,
-                'value' => 85,
-                'max_value' => 100,
+                'value' => 17,
+                'max_value' => 20,
                 'type' => 'exam',
                 'title' => 'Mid-term Exam',
                 'grade_date' => now()->format('Y-m-d'),
@@ -94,7 +94,7 @@ class GradeManagementTest extends TestCase
             'student_id' => $this->student->id,
             'subject_id' => $this->subject->id,
             'teacher_id' => $this->teacher->id,
-            'value' => 85,
+            'value' => 17,
             'title' => 'Mid-term Exam',
         ]);
     }
@@ -109,12 +109,12 @@ class GradeManagementTest extends TestCase
             'subject_id' => $this->subject->id,
             'class_id' => $this->class->id,
             'teacher_id' => $this->teacher->id,
-            'value' => 75,
+            'value' => 15,
         ]);
         
         $response = $this->actingAs($this->teacher)
             ->put(route('teacher.grades.update', $grade), [
-                'value' => 85,
+                'value' => 17,
                 'comment' => 'Updated grade',
             ]);
         
@@ -122,7 +122,7 @@ class GradeManagementTest extends TestCase
         
         $this->assertDatabaseHas('grades', [
             'id' => $grade->id,
-            'value' => 85,
+            'value' => 17,
             'comment' => 'Updated grade',
         ]);
     }
@@ -159,7 +159,7 @@ class GradeManagementTest extends TestCase
         
         $response = $this->actingAs($this->teacher)
             ->put(route('teacher.grades.update', $grade), [
-                'value' => 90,
+                'value' => 18,
             ]);
         
         $response->assertStatus(403);
@@ -183,8 +183,8 @@ class GradeManagementTest extends TestCase
         foreach ($students as $student) {
             $gradeData['grades'][] = [
                 'student_id' => $student->id,
-                'value' => rand(70, 100),
-                'max_value' => 100,
+                'value' => rand(10, 20),
+                'max_value' => 20,
             ];
         }
         
@@ -258,18 +258,18 @@ class GradeManagementTest extends TestCase
     public function test_grade_percentage_calculation()
     {
         $grade = Grade::factory()->create([
-            'value' => 85,
-            'max_value' => 100,
+            'value' => 17,
+            'max_value' => 20,
         ]);
         
         $this->assertEquals(85, $grade->getPercentage());
         
         $grade2 = Grade::factory()->create([
-            'value' => 17,
+            'value' => 10,
             'max_value' => 20,
         ]);
         
-        $this->assertEquals(85, $grade2->getPercentage());
+        $this->assertEquals(50, $grade2->getPercentage());
     }
 
     /**
@@ -278,28 +278,28 @@ class GradeManagementTest extends TestCase
     public function test_letter_grade_assignment()
     {
         $gradeValues = [
-            95 => 'A+',
-            87 => 'A',
-            82 => 'A-',
-            78 => 'B+',
-            75 => 'B',
-            71 => 'B-',
-            68 => 'C+',
-            64 => 'C',
-            61 => 'C-',
-            58 => 'D+',
-            54 => 'D',
-            51 => 'D-',
-            45 => 'F',
+            ['value' => 19.0, 'letter' => 'A+'],
+            ['value' => 17.4, 'letter' => 'A'],
+            ['value' => 16.4, 'letter' => 'A-'],
+            ['value' => 15.6, 'letter' => 'B+'],
+            ['value' => 15.0, 'letter' => 'B'],
+            ['value' => 14.2, 'letter' => 'B-'],
+            ['value' => 13.6, 'letter' => 'C+'],
+            ['value' => 12.8, 'letter' => 'C'],
+            ['value' => 12.2, 'letter' => 'C-'],
+            ['value' => 11.6, 'letter' => 'D+'],
+            ['value' => 10.8, 'letter' => 'D'],
+            ['value' => 10.2, 'letter' => 'D-'],
+            ['value' => 9.0, 'letter' => 'F'],
         ];
-        
-        foreach ($gradeValues as $value => $expectedLetter) {
+
+        foreach ($gradeValues as $gradeData) {
             $grade = Grade::factory()->create([
-                'value' => $value,
-                'max_value' => 100,
+                'value' => $gradeData['value'],
+                'max_value' => 20,
             ]);
             
-            $this->assertEquals($expectedLetter, $grade->getLetterGrade());
+            $this->assertEquals($gradeData['letter'], $grade->getLetterGrade());
         }
     }
 
@@ -313,8 +313,8 @@ class GradeManagementTest extends TestCase
                 'student_id' => $this->student->id,
                 'subject_id' => $this->subject->id,
                 'class_id' => $this->class->id,
-                'value' => 150, // Invalid: exceeds max_value
-                'max_value' => 100,
+                'value' => 25, // Invalid: exceeds /20 scale
+                'max_value' => 20,
                 'type' => 'invalid_type', // Invalid type
                 'grade_date' => 'not-a-date', // Invalid date
             ]);

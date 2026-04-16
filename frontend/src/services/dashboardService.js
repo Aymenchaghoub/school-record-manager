@@ -12,28 +12,28 @@ async function getDashboardByRole(role) {
 }
 
 async function getStudentsPerClass() {
-  const response = await apiClient.get('/api/dashboard/students-per-class');
+  const response = await apiClient.get('/api/v1/dashboard/students-per-class');
   return response.data;
 }
 
 async function getAveragePerSubject() {
-  const response = await apiClient.get('/api/dashboard/average-per-subject');
+  const response = await apiClient.get('/api/v1/dashboard/average-per-subject');
   return response.data;
 }
 
 async function getAbsencesPerMonth() {
-  const response = await apiClient.get('/api/dashboard/absences-per-month');
+  const response = await apiClient.get('/api/v1/dashboard/absences-per-month');
   return response.data;
 }
 
 async function getGradeEvolution(studentId) {
   const params = studentId ? { student_id: studentId } : {};
-  const response = await apiClient.get('/api/dashboard/grade-evolution', { params });
+  const response = await apiClient.get('/api/v1/dashboard/grade-evolution', { params });
   return response.data;
 }
 
 async function getKpis() {
-  const response = await apiClient.get('/api/dashboard/kpis');
+  const response = await apiClient.get('/api/v1/dashboard/kpis');
   return response.data;
 }
 

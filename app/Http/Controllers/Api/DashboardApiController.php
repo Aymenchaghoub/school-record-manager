@@ -11,6 +11,7 @@ use App\Models\Grade;
 use App\Models\ReportCard;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\GradeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -18,6 +19,10 @@ use Illuminate\Support\Collection;
 class DashboardApiController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(private readonly GradeService $gradeService)
+    {
+    }
 
     public function admin(Request $request): JsonResponse
     {
@@ -66,7 +71,7 @@ class DashboardApiController extends Controller
     {
         $student = $request->user();
         $currentClass = $student->studentClass();
-        $overallAverage = $this->averageForStudent($student->id);
+        $overallAverage = $this->gradeService->overallAverageForStudent($student->id);
         $totalAbsences = Absence::where('student_id', $student->id)->count();
 
         $stats = [
@@ -129,11 +134,7 @@ class DashboardApiController extends Controller
 
     private function averageForStudent(int $studentId): float
     {
-        $average = Grade::where('student_id', $studentId)
-            ->selectRaw('AVG((value / NULLIF(max_value, 0)) * 100) as average')
-            ->value('average');
-
-        return $this->normalizeAverage($average);
+        return $this->gradeService->overallAverageForStudent($studentId);
     }
 
     private function countStudentsInClasses(Collection $classIds): int

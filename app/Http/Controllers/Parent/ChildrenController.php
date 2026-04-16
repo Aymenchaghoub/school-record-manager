@@ -7,25 +7,51 @@ use App\Models\User;
 use App\Models\Grade;
 use App\Models\Absence;
 use App\Models\ReportCard;
+use App\Services\GradeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ChildrenController extends Controller
 {
+    public function __construct(private readonly GradeService $gradeService)
+    {
+    }
+
     public function index()
     {
         $parent = Auth::user();
-        $children = $parent->parentChildren()->get();
+        $children = $parent->parentChildren()->with(['studentClasses' => function ($query) {
+            $query->wherePivot('status', 'active');
+        }])->get();
 
-        // Get additional data for each child
+        $childIds = $children->pluck('id');
+
+        $averageMap = Grade::query()
+            ->whereIn('student_id', $childIds)
+            ->selectRaw('student_id, AVG((value / NULLIF(max_value, 0)) * 100) as average')
+            ->groupBy('student_id')
+            ->pluck('average', 'student_id');
+
+        $absenceMap = Absence::query()
+            ->whereIn('student_id', $childIds)
+            ->weekdaysOnly()
+            ->selectRaw('student_id, COUNT(*) as total')
+            ->groupBy('student_id')
+            ->pluck('total', 'student_id');
+
+        $recentGradesMap = Grade::query()
+            ->whereIn('student_id', $childIds)
+            ->where('created_at', '>=', now()->subDays(30))
+            ->selectRaw('student_id, COUNT(*) as total')
+            ->groupBy('student_id')
+            ->pluck('total', 'student_id');
+
         foreach ($children as $child) {
-            $child->currentClass = $child->studentClass();
-            $child->overall_average = $this->calculateStudentAverage($child->id);
-            $child->total_absences = Absence::where('student_id', $child->id)->weekdaysOnly()->count();
-            $child->recent_grades_count = Grade::where('student_id', $child->id)
-                ->where('created_at', '>=', now()->subDays(30))
-                ->count();
+            $child->currentClass = $child->studentClasses->first();
+            $child->overall_average = round((float) ($averageMap[$child->id] ?? 0), 2);
+            $child->total_absences = (int) ($absenceMap[$child->id] ?? 0);
+            $child->recent_grades_count = (int) ($recentGradesMap[$child->id] ?? 0);
         }
 
         return view('parent.children.index', compact('children'));
@@ -65,16 +91,18 @@ class ChildrenController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $grades = Grade::with(['subject', 'class', 'teacher'])
-            ->where('student_id', $child->id)
+        $gradeQuery = Grade::query()->where('student_id', $child->id);
+
+        $grades = (clone $gradeQuery)
+            ->with(['subject', 'class', 'teacher'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
         $statistics = [
-            'average' => $grades->avg('value'),
-            'highest' => $grades->max('value'),
-            'lowest' => $grades->min('value'),
-            'total_subjects' => $grades->pluck('subject_id')->unique()->count()
+            'average' => (clone $gradeQuery)->avg('value'),
+            'highest' => (clone $gradeQuery)->max('value'),
+            'lowest' => (clone $gradeQuery)->min('value'),
+            'total_subjects' => (clone $gradeQuery)->distinct('subject_id')->count('subject_id')
         ];
 
         return view('parent.children.grades', compact('child', 'grades', 'statistics'));
@@ -89,15 +117,17 @@ class ChildrenController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $absences = Absence::with(['class'])
-            ->where('student_id', $child->id)
+        $absenceQuery = Absence::query()->where('student_id', $child->id);
+
+        $absences = (clone $absenceQuery)
+            ->with(['class'])
             ->orderBy('absence_date', 'desc')
             ->paginate(20);
 
         $statistics = [
-            'total_absences' => Absence::where('student_id', $child->id)->count(),
-            'justified' => Absence::where('student_id', $child->id)->where('is_justified', true)->count(),
-            'unjustified' => Absence::where('student_id', $child->id)->where('is_justified', false)->count(),
+            'total_absences' => (clone $absenceQuery)->count(),
+            'justified' => (clone $absenceQuery)->where('is_justified', true)->count(),
+            'unjustified' => (clone $absenceQuery)->where('is_justified', false)->count(),
         ];
 
         return view('parent.children.absences', compact('child', 'absences', 'statistics'));
@@ -148,21 +178,6 @@ class ChildrenController extends Controller
 
     private function calculateStudentAverage($studentId)
     {
-        $grades = Grade::where('student_id', $studentId)->get();
-        
-        if ($grades->isEmpty()) {
-            return 0;
-        }
-
-        $totalWeightedScore = 0;
-        $totalWeight = 0;
-
-        foreach ($grades as $grade) {
-            $normalizedScore = ($grade->value / $grade->max_value) * 100;
-            $totalWeightedScore += $normalizedScore * $grade->weight;
-            $totalWeight += $grade->weight;
-        }
-
-        return $totalWeight > 0 ? round($totalWeightedScore / $totalWeight, 2) : 0;
+        return $this->gradeService->overallAverageForStudent((int) $studentId);
     }
 }

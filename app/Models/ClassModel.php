@@ -17,8 +17,7 @@ class ClassModel extends Model
         'level',
         'section',
         'academic_year',
-        'responsible_teacher_id',
-        'teacher_id', // Alias for responsible_teacher_id
+        'teacher_id',
         'capacity',
         'description',
         'is_active',
@@ -30,37 +29,11 @@ class ClassModel extends Model
     ];
 
     /**
-     * Set teacher_id attribute (maps to responsible_teacher_id)
-     */
-    public function setTeacherIdAttribute($value)
-    {
-        $this->attributes['responsible_teacher_id'] = $value;
-    }
-
-    /**
-     * Get teacher_id attribute (maps from responsible_teacher_id)
-     */
-    public function getTeacherIdAttribute()
-    {
-        return isset($this->attributes['responsible_teacher_id'])
-            ? (int) $this->attributes['responsible_teacher_id']
-            : null;
-    }
-
-    /**
-     * Get the responsible teacher for the class
-     */
-    public function responsibleTeacher()
-    {
-        return $this->belongsTo(User::class, 'responsible_teacher_id');
-    }
-
-    /**
-     * Alias for responsibleTeacher (for backward compatibility)
+     * Get the teacher responsible for the class.
      */
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'responsible_teacher_id');
+        return $this->belongsTo(User::class, 'teacher_id');
     }
 
     /**

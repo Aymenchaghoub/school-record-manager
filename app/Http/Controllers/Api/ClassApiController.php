@@ -19,7 +19,7 @@ class ClassApiController extends Controller
         $search = trim((string) $request->input('search', ''));
 
         $query = ClassModel::query()
-            ->with(['responsibleTeacher:id,name,email'])
+            ->with(['teacher:id,name,email'])
             ->withCount('students')
             ->latest();
 
@@ -29,7 +29,7 @@ class ClassApiController extends Controller
 
             $query->where(function ($builder) use ($teacherClassIds, $teacherId) {
                 $builder->whereIn('id', $teacherClassIds)
-                    ->orWhere('responsible_teacher_id', $teacherId);
+                    ->orWhere('teacher_id', $teacherId);
             });
         }
 
@@ -48,7 +48,7 @@ class ClassApiController extends Controller
         $class = ClassModel::create($payload);
 
         return $this->success(
-            $class->load(['responsibleTeacher:id,name,email']),
+            $class->load(['teacher:id,name,email']),
             'Class created successfully.',
             201
         );
@@ -57,7 +57,7 @@ class ClassApiController extends Controller
     public function show(ClassModel $class): JsonResponse
     {
         return $this->success(
-            $class->load(['responsibleTeacher:id,name,email'])->loadCount('students'),
+            $class->load(['teacher:id,name,email'])->loadCount('students'),
             'Class fetched successfully.'
         );
     }
@@ -70,7 +70,7 @@ class ClassApiController extends Controller
         $class->update($payload);
 
         return $this->success(
-            $class->fresh()->load(['responsibleTeacher:id,name,email'])->loadCount('students'),
+            $class->fresh()->load(['teacher:id,name,email'])->loadCount('students'),
             'Class updated successfully.'
         );
     }
@@ -84,12 +84,6 @@ class ClassApiController extends Controller
 
     private function normalizePayload(array $validated): array
     {
-        if (isset($validated['teacher_id']) && ! isset($validated['responsible_teacher_id'])) {
-            $validated['responsible_teacher_id'] = $validated['teacher_id'];
-        }
-
-        unset($validated['teacher_id']);
-
         return $validated;
     }
 }

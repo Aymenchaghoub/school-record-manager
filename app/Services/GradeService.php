@@ -3,102 +3,136 @@
 namespace App\Services;
 
 use App\Models\Grade;
-use App\Models\User;
-use App\Models\ClassModel;
-use App\Models\Subject;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
 
 class GradeService
 {
     /**
-     * Calculate student's GPA
+     * Crée une note avec les valeurs normalisées du schéma courant.
      */
-    public function calculateGPA(User $student, ?string $semester = null): float
+    public function create(array $data): Grade
     {
-        $query = Grade::where('student_id', $student->id);
-        
-        if ($semester) {
-            $query->where('semester', $semester);
-        }
-        
-        $grades = $query->get();
-        
+        $payload = $this->normalizePayload($data);
+
+        return Grade::create($payload);
+    }
+
+    /**
+     * Met a jour une note avec les valeurs normalisées du schéma courant.
+     */
+    public function update(Grade $grade, array $data): Grade
+    {
+        $payload = $this->normalizePayload($data);
+
+        $grade->update($payload);
+
+        return $grade->fresh();
+    }
+
+    /**
+     * Calcule la moyenne d'un etudiant pour une matiere donnee.
+     */
+    public function averageForStudent(int $studentId, int $subjectId): float
+    {
+        $grades = Grade::where('student_id', $studentId)
+            ->where('subject_id', $subjectId)
+            ->get();
+
         if ($grades->isEmpty()) {
             return 0.0;
         }
-        
-        $totalPoints = 0;
-        $totalCredits = 0;
-        
-        foreach ($grades as $grade) {
-            $credit = $grade->subject->credits ?? 1;
-            $totalPoints += ($grade->grade * $credit);
-            $totalCredits += $credit;
-        }
-        
-        return $totalCredits > 0 ? round($totalPoints / $totalCredits, 2) : 0.0;
+
+        return round((float) $grades->avg('value'), 2);
     }
-    
+
     /**
-     * Get grade statistics for a class
+     * Calcule la moyenne globale d'un etudiant sur l'ensemble des matieres.
      */
-    public function getClassStatistics(ClassModel $class, ?Subject $subject = null): array
+    public function overallAverageForStudent(int $studentId): float
     {
-        $query = Grade::where('class_id', $class->id);
-        
-        if ($subject) {
-            $query->where('subject_id', $subject->id);
+        $average = Grade::where('student_id', $studentId)->avg('value');
+
+        return round((float) ($average ?? 0), 2);
+    }
+
+    /**
+     * Calcule les statistiques d'une classe pour une matiere.
+     */
+    public function classStats(int $classId, int $subjectId): array
+    {
+        $grades = Grade::query()
+            ->where('subject_id', $subjectId)
+            ->whereHas('student', function (Builder $query) use ($classId) {
+                $query->whereHas('studentClasses', function (Builder $classQuery) use ($classId) {
+                    $classQuery->where('classes.id', $classId);
+                });
+            })
+            ->pluck('value');
+
+        if ($grades->isEmpty()) {
+            return ['average' => 0, 'min' => 0, 'max' => 0, 'count' => 0];
         }
-        
+
         return [
-            'average' => round($query->avg('value') ?? 0, 2),
-            'highest' => $query->max('value') ?? 0,
-            'lowest' => $query->min('value') ?? 0,
-            'total_students' => $query->distinct('student_id')->count(),
-            'pass_rate' => $this->calculatePassRate($query->get())
+            'average' => round((float) $grades->avg(), 2),
+            'min' => (float) $grades->min(),
+            'max' => (float) $grades->max(),
+            'count' => $grades->count(),
         ];
     }
-    
+
     /**
-     * Calculate pass rate (percentage of grades >= 50)
+     * Retourne le label de performance selon la valeur (sur 20).
      */
-    private function calculatePassRate($grades): float
+    public function performanceLabel(float $value): string
     {
-        if ($grades->isEmpty()) {
-            return 0.0;
-        }
-        
-        $passing = $grades->filter(fn($grade) => $grade->grade >= 50)->count();
-        return round(($passing / $grades->count()) * 100, 2);
+        return match (true) {
+            $value >= 16 => 'Excellent',
+            $value >= 12 => 'Bien',
+            $value >= 10 => 'Passable',
+            default => 'Insuffisant',
+        };
     }
-    
+
     /**
-     * Batch create grades for multiple students
+     * Crée plusieurs notes sur une meme evaluation.
      */
-    public function batchCreate(array $data): bool
+    public function batchCreate(array $data, int $teacherId): void
     {
-        DB::beginTransaction();
-        
-        try {
-            foreach ($data['grades'] as $gradeData) {
-                Grade::create([
-                    'student_id' => $gradeData['student_id'],
-                    'subject_id' => $data['subject_id'],
-                    'class_id' => $data['class_id'],
-                    'teacher_id' => $data['teacher_id'],
-                    'grade' => $gradeData['grade'],
-                    'exam_type' => $data['exam_type'],
-                    'semester' => $data['semester'] ?? 1,
-                    'academic_year' => $data['academic_year'] ?? date('Y'),
-                    'comment' => $gradeData['comment'] ?? null,
-                ]);
-            }
-            
-            DB::commit();
-            return true;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+        foreach ($data['grades'] as $gradeData) {
+            $payload = $this->normalizePayload([
+                'student_id' => $gradeData['student_id'],
+                'subject_id' => $data['subject_id'],
+                'class_id' => $data['class_id'],
+                'teacher_id' => $teacherId,
+                'type' => $data['type'],
+                'value' => $gradeData['value'],
+                'max_value' => $gradeData['max_value'] ?? 20,
+                'title' => $data['title'] ?? null,
+                'grade_date' => $data['grade_date'] ?? now()->toDateString(),
+                'term' => $data['term'] ?? null,
+                'weight' => $data['weight'] ?? 1,
+                'comment' => $gradeData['comment'] ?? null,
+            ]);
+
+            Grade::create($payload);
         }
+    }
+
+    private function normalizePayload(array $data): array
+    {
+        if (isset($data['value'])) {
+            $data['value'] = (float) $data['value'];
+        }
+
+        $data['max_value'] = 20;
+
+        if (array_key_exists('weight', $data)) {
+            $data['weight'] = (float) ($data['weight'] ?: 1);
+        } else {
+            $data['weight'] = 1;
+        }
+
+        return $data;
     }
 }

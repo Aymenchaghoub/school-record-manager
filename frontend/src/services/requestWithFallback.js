@@ -16,7 +16,9 @@ export async function requestWithFallback(method, endpoints, payload, config) {
 
       return await apiClient[method](endpoint, payload, config);
     } catch (error) {
-      if (error?.response?.status && error.response.status !== 404) {
+      const status = error?.status ?? error?.response?.status;
+
+      if (status && status !== 404) {
         throw error;
       }
 

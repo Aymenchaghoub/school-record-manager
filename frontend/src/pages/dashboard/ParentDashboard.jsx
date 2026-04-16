@@ -97,12 +97,12 @@ export function ParentDashboard({ payload }) {
       labels: evolutionSeries.labels,
       datasets: [
         {
-          label: 'Grade',
+          label: 'Note',
           data: evolutionSeries.data,
-          borderColor: 'rgba(139, 92, 246, 1)',
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
+          borderColor: 'rgba(14, 116, 144, 1)',
+          backgroundColor: 'rgba(14, 116, 144, 0.2)',
           tension: 0.35,
-          pointBackgroundColor: 'rgba(139, 92, 246, 1)',
+          pointBackgroundColor: 'rgba(14, 116, 144, 1)',
           pointRadius: 4,
         },
       ],
@@ -128,8 +128,8 @@ export function ParentDashboard({ payload }) {
   if (!linkedChildId) {
     return (
       <EmptyState
-        title="No child linked to your account"
-        description="Link a child profile to your account to view grade evolution and attendance metrics."
+        title="Aucun enfant lie a votre compte"
+        description="Associez un profil eleve a votre compte pour consulter les indicateurs scolaires."
       />
     );
   }
@@ -142,27 +142,27 @@ export function ParentDashboard({ payload }) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-        <StatCard label="Child Average Grade" value={averageGrade} accent="cyan" />
-        <StatCard label="Child Total Absences" value={totalAbsences} accent="rose" />
+        <StatCard label="Moyenne de l'enfant" value={averageGrade} accent="cyan" />
+        <StatCard label="Absences de l'enfant" value={totalAbsences} accent="rose" />
       </div>
 
       <div className="surface-card p-4">
         <h3 className="text-base font-semibold" style={{ color: 'var(--fg)' }}>
-          Grade Evolution
+          Evolution des notes
         </h3>
 
         <div className="relative mt-4 h-[300px]">
           {isEvolutionLoading ? (
             <div className="flex h-full items-center justify-center">
-              <Spinner label="Loading chart..." />
+              <Spinner label="Chargement du graphique..." />
             </div>
           ) : null}
 
           {!isEvolutionLoading && evolutionError ? (
             <div className="h-full">
               <EmptyState
-                title="Unable to load grade evolution"
-                description="Child grade evolution could not be loaded right now."
+                title="Impossible de charger l'evolution des notes"
+                description="Les donnees d'evolution de l'enfant sont indisponibles pour le moment."
               />
             </div>
           ) : null}
@@ -170,8 +170,8 @@ export function ParentDashboard({ payload }) {
           {!isEvolutionLoading && !evolutionError && !hasChartData(evolutionSeries) ? (
             <div className="h-full">
               <EmptyState
-                title="No grade data available yet"
-                description="The evolution chart will appear once your child's grades are recorded."
+                title="Aucune note disponible"
+                description="Le graphique apparaitra des que des notes seront enregistrees."
               />
             </div>
           ) : null}

@@ -1,13 +1,16 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
+import apiClient from '../../services/apiClient';
 import { createClassesService } from '../../services/classesService';
 import { ROLES } from '../../utils/constants';
+import { parseListResponse } from '../../utils/response';
 
 export function ClassesPage() {
   const { user } = useAuth();
   const role = user?.role;
+  const [teacherOptions, setTeacherOptions] = useState([{ value: '', label: 'Selectionner un enseignant' }]);
 
   const service = useMemo(
     () => createClassesService(role || ROLES.ADMIN),
@@ -15,6 +18,30 @@ export function ClassesPage() {
   );
 
   const isAdmin = role === ROLES.ADMIN;
+
+  useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+
+    const loadTeachers = async () => {
+      try {
+        const response = await apiClient.get('/api/v1/admin/users', {
+          params: { role: 'teacher', per_page: 100 },
+        });
+        const teachers = parseListResponse(response.data?.data || response.data).items;
+
+        setTeacherOptions([
+          { value: '', label: 'Selectionner un enseignant' },
+          ...teachers.map((teacher) => ({ value: String(teacher.id), label: teacher.name })),
+        ]);
+      } catch {
+        setTeacherOptions([{ value: '', label: 'Selectionner un enseignant' }]);
+      }
+    };
+
+    loadTeachers();
+  }, [isAdmin]);
 
   return (
     <CrudPage
@@ -37,7 +64,7 @@ export function ClassesPage() {
           label: 'Etat',
           render: (item) => (
             <Badge tone={item.is_active ? 'success' : 'danger'}>
-              {item.is_active ? 'Active' : 'Inactive'}
+              {item.is_active ? 'Actif' : 'Inactif'}
             </Badge>
           ),
         },
@@ -48,25 +75,29 @@ export function ClassesPage() {
         { name: 'level', label: 'Niveau', required: true },
         { name: 'section', label: 'Section' },
         { name: 'academic_year', label: 'Annee academique', required: true },
-        { name: 'responsible_teacher_id', label: 'ID enseignant responsable', type: 'number' },
+        { name: 'teacher_id', label: 'Enseignant responsable', type: 'select', options: teacherOptions },
         { name: 'capacity', label: 'Capacite', type: 'number', required: true, defaultValue: 30 },
         { name: 'description', label: 'Description', type: 'textarea' },
         { name: 'is_active', label: 'Classe active', type: 'checkbox', defaultValue: true },
       ]}
+      mapItemToForm={(item) => ({
+        ...item,
+        teacher_id: String(item.teacher_id || item.teacher?.id || ''),
+      })}
       mapFormToPayload={(values) => ({
         ...values,
         capacity: Number(values.capacity || 0),
-        responsible_teacher_id: values.responsible_teacher_id
-          ? Number(values.responsible_teacher_id)
+        teacher_id: values.teacher_id
+          ? Number(values.teacher_id)
           : null,
         is_active: Boolean(values.is_active),
       })}
-      searchPlaceholder="Search classes by name..."
+      searchPlaceholder="Rechercher une classe par nom..."
       searchDebounceMs={300}
       emptyState={{
-        title: 'No classes yet',
-        description: 'Create a class to organize students and schedule activities.',
-        actionLabel: 'Create a class',
+        title: 'Aucune classe disponible',
+        description: 'Creez une classe pour organiser les eleves et les activites.',
+        actionLabel: 'Creer une classe',
       }}
     />
   );

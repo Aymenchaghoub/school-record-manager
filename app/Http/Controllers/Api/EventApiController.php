@@ -45,12 +45,16 @@ class EventApiController extends Controller
                 $builder->where('title', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
                     ->orWhere('type', 'like', "%{$search}%")
-                    ->orWhere('event_type', 'like', "%{$search}%")
                     ->orWhere('location', 'like', "%{$search}%");
             });
         }
 
         return $this->paginated($query->paginate($perPage)->withQueryString(), 'Events fetched successfully.');
+    }
+
+    public function parentIndex(Request $request): JsonResponse
+    {
+        return $this->index($request);
     }
 
     public function store(Request $request): JsonResponse
@@ -202,10 +206,7 @@ class EventApiController extends Controller
             'title' => [$required, 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type' => [$required, Rule::in(self::TYPES)],
-            'event_type' => ['nullable', Rule::in(self::TYPES)],
-            'event_date' => ['nullable', 'date'],
-            'event_time' => ['nullable', 'date_format:H:i'],
-            'start_date' => ['nullable', 'date'],
+            'start_date' => [$required, 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'location' => ['nullable', 'string', 'max:255'],
             'class_id' => ['nullable', 'integer', 'exists:classes,id'],
@@ -224,25 +225,15 @@ class EventApiController extends Controller
         } elseif ($isUpdate && $existingEvent?->start_date) {
             $startDate = Carbon::parse($existingEvent->start_date);
         } else {
-            $date = $validated['event_date'] ?? now()->toDateString();
-            $time = $validated['event_time'] ?? '08:00';
-            $startDate = Carbon::parse("{$date} {$time}");
+            $startDate = now();
         }
 
         $validated['start_date'] = $startDate;
-        $validated['event_date'] = $validated['event_date'] ?? $startDate->toDateString();
-        $validated['event_time'] = $validated['event_time'] ?? $startDate->format('H:i:s');
 
         if (! empty($validated['end_date'])) {
             $validated['end_date'] = Carbon::parse($validated['end_date']);
-        }
-
-        if (! isset($validated['event_type'])) {
-            if (isset($validated['type'])) {
-                $validated['event_type'] = $validated['type'];
-            } elseif (! $isUpdate) {
-                $validated['event_type'] = 'other';
-            }
+        } elseif (! $isUpdate && ! isset($validated['end_date'])) {
+            $validated['end_date'] = null;
         }
 
         if (! isset($validated['target_audience']) && ! $isUpdate) {

@@ -32,7 +32,7 @@ class ReportCardTest extends TestCase
         
         // Create class
         $this->class = ClassModel::factory()->create([
-            'responsible_teacher_id' => $this->teacher->id,
+            'teacher_id' => $this->teacher->id,
             'academic_year' => '2024-2025',
         ]);
         
@@ -72,8 +72,8 @@ class ReportCardTest extends TestCase
                 'class_id' => $this->class->id,
                 'teacher_id' => $this->teacher->id,
                 'term' => 'Term 1',
-                'value' => rand(70, 100),
-                'max_value' => 100,
+                'value' => rand(14, 20),
+                'max_value' => 20,
                 'weight' => rand(1, 3),
             ]);
         }
@@ -126,8 +126,8 @@ class ReportCardTest extends TestCase
             'class_id' => $this->class->id,
             'teacher_id' => $this->teacher->id,
             'term' => 'Term 1',
-            'value' => 80,
-            'max_value' => 100,
+            'value' => 16,
+            'max_value' => 20,
             'weight' => 1,
         ]);
         
@@ -138,8 +138,8 @@ class ReportCardTest extends TestCase
             'class_id' => $this->class->id,
             'teacher_id' => $this->teacher->id,
             'term' => 'Term 1',
-            'value' => 90,
-            'max_value' => 100,
+            'value' => 18,
+            'max_value' => 20,
             'weight' => 1,
         ]);
         
@@ -168,8 +168,8 @@ class ReportCardTest extends TestCase
                 'class_id' => $this->class->id,
                 'teacher_id' => $this->teacher->id,
                 'term' => 'Term 1',
-                'value' => rand(85, 100),
-                'max_value' => 100,
+                'value' => rand(17, 20),
+                'max_value' => 20,
             ]);
         }
         

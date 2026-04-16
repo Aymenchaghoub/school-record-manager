@@ -18,15 +18,15 @@ return new class extends Migration
             $table->string('level'); // e.g., "Grade 1", "Grade 2", etc.
             $table->string('section')->nullable(); // e.g., "A", "B", "C"
             $table->string('academic_year');
-            $table->unsignedBigInteger('responsible_teacher_id')->nullable();
+            $table->unsignedBigInteger('teacher_id')->nullable();
             $table->integer('capacity')->default(30);
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             
-            $table->foreign('responsible_teacher_id')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('teacher_id')->references('id')->on('users')->onDelete('set null');
             $table->index(['academic_year', 'is_active']);
-            $table->index('responsible_teacher_id');
+            $table->index('teacher_id');
         });
     }
 

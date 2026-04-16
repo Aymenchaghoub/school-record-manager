@@ -17,11 +17,21 @@ class UserApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $search = trim((string) $request->input('search', ''));
+        $role = trim((string) $request->input('role', ''));
+        $isActive = $request->input('is_active');
 
         $query = User::query()->latest();
 
         if ($search !== '') {
             $query->where('name', 'like', "%{$search}%");
+        }
+
+        if ($role !== '') {
+            $query->where('role', $role);
+        }
+
+        if ($isActive !== null && $isActive !== '') {
+            $query->where('is_active', filter_var($isActive, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? true);
         }
 
         return $this->paginated($query->paginate(10)->withQueryString(), 'Users fetched successfully.');

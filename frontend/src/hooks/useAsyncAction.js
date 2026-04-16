@@ -12,7 +12,7 @@ export function useAsyncAction(asyncFn) {
       try {
         return await asyncFn(...args);
       } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Unexpected error');
+        setError(err?.message || err?.original?.response?.data?.message || 'Erreur inattendue');
         throw err;
       } finally {
         setIsPending(false);

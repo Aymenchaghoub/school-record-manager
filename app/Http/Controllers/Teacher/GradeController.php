@@ -7,11 +7,16 @@ use App\Models\Grade;
 use App\Models\ClassModel;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\GradeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class GradeController extends Controller
 {
+    public function __construct(private readonly GradeService $gradeService)
+    {
+    }
+
     public function index()
     {
         $teacher = Auth::user();
@@ -66,7 +71,7 @@ class GradeController extends Controller
             'class_id' => 'required|exists:classes,id',
             'type' => 'required|in:exam,quiz,assignment,project,participation,midterm,final',
             'value' => 'required|numeric|min:0|lte:max_value',
-            'max_value' => 'required|numeric|min:1',
+            'max_value' => 'required|numeric|in:20',
             'title' => 'nullable|string|max:255',
             'grade_date' => 'required|date',
             'term' => 'nullable|string|max:255',
@@ -74,8 +79,7 @@ class GradeController extends Controller
             'comment' => 'nullable|string'
         ]);
 
-        $validated['teacher_id'] = Auth::id();
-        Grade::create($validated);
+        $this->gradeService->create(array_merge($validated, ['teacher_id' => Auth::id()]));
 
         return redirect()->route('teacher.grades.index')
             ->with('success', 'Grade added successfully.');
@@ -148,27 +152,12 @@ class GradeController extends Controller
             'weight' => 'sometimes|numeric|min:0',
             'grades' => 'required|array',
             'grades.*.student_id' => 'required|exists:users,id',
-            'grades.*.value' => 'required|numeric|min:0',
-            'grades.*.max_value' => 'sometimes|numeric|min:1',
+            'grades.*.value' => 'required|numeric|min:0|max:20',
+            'grades.*.max_value' => 'sometimes|numeric|in:20',
             'grades.*.comment' => 'nullable|string'
         ]);
 
-        foreach ($validated['grades'] as $gradeData) {
-            Grade::create([
-                'student_id' => $gradeData['student_id'],
-                'subject_id' => $validated['subject_id'],
-                'class_id' => $validated['class_id'],
-                'teacher_id' => Auth::id(),
-                'type' => $validated['type'],
-                'value' => $gradeData['value'],
-                'max_value' => $gradeData['max_value'] ?? 100,
-                'title' => $validated['title'] ?? null,
-                'grade_date' => $validated['grade_date'] ?? now(),
-                'term' => $validated['term'] ?? null,
-                'weight' => $validated['weight'] ?? 1,
-                'comment' => $gradeData['comment'] ?? null
-            ]);
-        }
+        $this->gradeService->batchCreate($validated, (int) Auth::id());
 
         return redirect()->route('teacher.grades.index')
             ->with('success', 'Grades added successfully.');
