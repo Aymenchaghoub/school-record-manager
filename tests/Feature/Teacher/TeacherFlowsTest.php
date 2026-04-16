@@ -3,6 +3,7 @@
 namespace Tests\Feature\Teacher;
 
 use App\Models\ClassModel;
+use App\Models\Grade;
 use App\Models\Subject;
 use App\Models\User;
 use Tests\TestCase;
@@ -69,5 +70,67 @@ class TeacherFlowsTest extends TestCase
         $this->actingAs($teacher)
             ->getJson('/api/v1/dashboard/kpis')
             ->assertOk();
+    }
+
+    public function test_unauthenticated_cannot_access_teacher_grades(): void
+    {
+        $this->getJson('/api/v1/teacher/grades')->assertUnauthorized();
+    }
+
+    public function test_teacher_can_view_own_grade_details(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $grade = Grade::factory()->create(['teacher_id' => $teacher->id]);
+
+        $this->actingAs($teacher)
+            ->getJson("/api/v1/teacher/grades/{$grade->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $grade->id);
+    }
+
+    public function test_teacher_cannot_view_other_teacher_grade_details(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $grade = Grade::factory()->create(['teacher_id' => $otherTeacher->id]);
+
+        $this->actingAs($teacher)
+            ->getJson("/api/v1/teacher/grades/{$grade->id}")
+            ->assertNotFound();
+    }
+
+    public function test_teacher_can_update_own_grade(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $grade = Grade::factory()->create(['teacher_id' => $teacher->id, 'value' => 11]);
+
+        $response = $this->actingAs($teacher)
+            ->putJson("/api/v1/teacher/grades/{$grade->id}", ['value' => 15, 'type' => 'exam'])
+            ->assertOk();
+
+        $this->assertSame(15.0, (float) $response->json('data.value'));
+    }
+
+    public function test_teacher_can_delete_own_grade(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $grade = Grade::factory()->create(['teacher_id' => $teacher->id]);
+
+        $this->actingAs($teacher)
+            ->deleteJson("/api/v1/teacher/grades/{$grade->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('grades', ['id' => $grade->id]);
+    }
+
+    public function test_teacher_cannot_delete_other_teacher_grade(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $grade = Grade::factory()->create(['teacher_id' => $otherTeacher->id]);
+
+        $this->actingAs($teacher)
+            ->deleteJson("/api/v1/teacher/grades/{$grade->id}")
+            ->assertNotFound();
     }
 }

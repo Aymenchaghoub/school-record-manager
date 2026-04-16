@@ -75,6 +75,45 @@ class UserManagementTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_parent_cannot_access_user_management(): void
+    {
+        $parent = User::factory()->parent()->create();
+
+        $this->actingAs($parent)
+            ->getJson('/api/v1/admin/users')
+            ->assertForbidden();
+    }
+
+    public function test_unauthenticated_cannot_access_user_management(): void
+    {
+        $this->getJson('/api/v1/admin/users')->assertUnauthorized();
+    }
+
+    public function test_unauthenticated_cannot_create_user(): void
+    {
+        $this->postJson('/api/v1/admin/users', [])->assertUnauthorized();
+    }
+
+    public function test_admin_can_show_user(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $target = User::factory()->student()->create();
+
+        $this->actingAs($admin)
+            ->getJson("/api/v1/admin/users/{$target->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $target->id);
+    }
+
+    public function test_admin_cannot_delete_own_account(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/v1/admin/users/{$admin->id}")
+            ->assertUnprocessable();
+    }
+
     public function test_duplicate_email_is_rejected(): void
     {
         $admin = User::factory()->admin()->create();
