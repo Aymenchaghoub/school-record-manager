@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from '../utils/constants';
 import { parseEntityResponse } from '../utils/response';
 import apiClient from './apiClient';
+import { ensureCsrfCookie } from './apiClient';
 import { requestWithFallback } from './requestWithFallback';
 
 async function getCurrentUser() {
@@ -11,7 +12,7 @@ async function getCurrentUser() {
 }
 
 async function login(credentials) {
-  await apiClient.get(API_ENDPOINTS.auth.csrf);
+  await ensureCsrfCookie();
 
   await requestWithFallback('post', API_ENDPOINTS.auth.loginCandidates, credentials);
 
@@ -24,16 +25,25 @@ async function login(credentials) {
 
 async function logout() {
   try {
+    await ensureCsrfCookie();
     await requestWithFallback('post', API_ENDPOINTS.auth.logoutCandidates, {});
   } catch (error) {
-    if (error?.response?.status !== 401) {
+    const status = error?.status ?? error?.response?.status;
+    if (status !== 401) {
       throw error;
     }
   }
+}
+
+export async function updateProfile(data) {
+  await ensureCsrfCookie();
+  const response = await apiClient.put('/api/v1/profile', data);
+  return response.data;
 }
 
 export const authService = {
   login,
   logout,
   getCurrentUser,
+  updateProfile,
 };
