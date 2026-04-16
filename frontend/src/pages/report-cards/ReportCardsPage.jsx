@@ -14,6 +14,31 @@ const conductOptions = [
   { value: 'Insuffisant', label: 'Insuffisant' },
 ];
 
+const formatAverageOnTwenty = (average) => {
+  if (average === null || average === undefined || average === '') {
+    return '—';
+  }
+
+  const parsedAverage = Number(average);
+  if (!Number.isFinite(parsedAverage)) {
+    return '—';
+  }
+
+  return `${parsedAverage.toFixed(2)}/20`;
+};
+
+const performanceBadge = (average) => {
+  if (average === null || average === undefined || average === '') return null;
+
+  const parsedAverage = Number(average);
+  if (!Number.isFinite(parsedAverage)) return null;
+
+  if (parsedAverage >= 16) return <span className="badge-green">Excellent</span>;
+  if (parsedAverage >= 12) return <span className="badge-blue">Bien</span>;
+  if (parsedAverage >= 10) return <span className="badge-yellow">Passable</span>;
+  return <span className="badge-red">Insuffisant</span>;
+};
+
 export function ReportCardsPage() {
   const { user } = useAuth();
   const role = user?.role;
@@ -47,7 +72,46 @@ export function ReportCardsPage() {
         },
         { key: 'term', label: 'Periode' },
         { key: 'academic_year', label: 'Annee' },
-        { key: 'overall_average', label: 'Moyenne' },
+        {
+          key: 'overall_average',
+          label: 'Moyenne',
+          render: (item) => (
+            <span className="font-semibold">{formatAverageOnTwenty(item.overall_average)}</span>
+          ),
+        },
+        {
+          key: 'subjects',
+          label: 'Moyennes par matiere',
+          render: (item) => {
+            const subjects = Array.isArray(item.subjects)
+              ? item.subjects
+              : Array.isArray(item.subject_grades)
+                ? item.subject_grades
+                : [];
+
+            if (subjects.length === 0) {
+              return '—';
+            }
+
+            return (
+              <div className="space-y-1.5">
+                {subjects.map((subject, index) => (
+                  <div key={`${subject.subject || subject.subject_name || 'subject'}-${index}`} className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-gray-600 dark:text-gray-300">
+                      {subject.subject || subject.subject_name || `Matiere ${index + 1}`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">
+                        {subject.average !== null && subject.average !== undefined ? `${subject.average}/20` : '—'}
+                      </span>
+                      {performanceBadge(subject.average)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          },
+        },
         { key: 'total_absences', label: 'Absences' },
         {
           key: 'is_final',
@@ -80,7 +144,9 @@ export function ReportCardsPage() {
         ...item,
         student_id: item.student_id || item.student?.id || '',
         class_id: item.class_id || item.class?.id || '',
-        subject_grades: Array.isArray(item.subject_grades)
+        subject_grades: Array.isArray(item.subjects)
+          ? JSON.stringify(item.subjects, null, 2)
+          : Array.isArray(item.subject_grades)
           ? JSON.stringify(item.subject_grades, null, 2)
           : item.subject_grades
             ? JSON.stringify(item.subject_grades, null, 2)

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\ClassModel;
+use App\Models\Grade;
 use App\Models\ReportCard;
 use App\Models\User;
+use App\Services\GradeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +25,10 @@ class ReportCardApiController extends Controller
         'Fair',
         'Poor',
     ];
+
+    public function __construct(private readonly GradeService $gradeService)
+    {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -50,7 +57,12 @@ class ReportCardApiController extends Controller
             });
         }
 
-        return $this->paginated($query->paginate($perPage)->withQueryString(), 'Report cards fetched successfully.');
+            $paginator = $query->paginate($perPage)->withQueryString();
+            $paginator->setCollection(
+                $paginator->getCollection()->map(fn (ReportCard $reportCard) => $this->transformReportCard($reportCard))
+            );
+
+            return $this->paginated($paginator, 'Report cards fetched successfully.');
     }
 
     public function store(Request $request): JsonResponse
@@ -60,10 +72,12 @@ class ReportCardApiController extends Controller
         }
 
         $validated = $this->validatePayload($request);
-        $reportCard = ReportCard::create($validated);
+            $payload = $this->preparePayload($validated);
+
+            $reportCard = ReportCard::create($payload)->load(['student:id,name,email', 'class:id,name,code']);
 
         return $this->success(
-            $reportCard->load(['student:id,name,email', 'class:id,name,code']),
+                $this->transformReportCard($reportCard),
             'Report card created successfully.',
             201
         );
@@ -77,7 +91,7 @@ class ReportCardApiController extends Controller
             return $this->error('Report card not found.', [], 404);
         }
 
-        return $this->success($ownedReportCard, 'Report card fetched successfully.');
+        return $this->success($this->transformReportCard($ownedReportCard), 'Report card fetched successfully.');
     }
 
     public function update(Request $request, ReportCard $reportCard): JsonResponse
@@ -87,10 +101,14 @@ class ReportCardApiController extends Controller
         }
 
         $validated = $this->validatePayload($request, true);
-        $reportCard->update($validated);
+        $payload = $this->preparePayload($validated, $reportCard);
+
+        $reportCard->update($payload);
+
+        $freshReportCard = $reportCard->fresh()->load(['student:id,name,email', 'class:id,name,code']);
 
         return $this->success(
-            $reportCard->fresh()->load(['student:id,name,email', 'class:id,name,code']),
+            $this->transformReportCard($freshReportCard),
             'Report card updated successfully.'
         );
     }
@@ -150,22 +168,164 @@ class ReportCardApiController extends Controller
     {
         $required = $isUpdate ? 'sometimes' : 'required';
 
-        return $request->validate([
-            'student_id' => [$required, 'integer', 'exists:users,id'],
+        $validated = $request->validate([
+            'student_id' => [$required, 'integer', Rule::exists('users', 'id')->where('role', 'student')],
             'class_id' => [$required, 'integer', 'exists:classes,id'],
-            'term' => [$required, 'string', 'max:100'],
-            'academic_year' => [$required, 'string', 'max:30'],
-            'overall_average' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'term' => [$required, 'max:100'],
+            'academic_year' => ['sometimes', 'string', 'max:30'],
+            'year' => ['sometimes', 'integer', 'digits:4'],
+            'overall_average' => ['nullable', 'numeric', 'min:0', 'max:20'],
             'total_absences' => ['nullable', 'integer', 'min:0'],
             'justified_absences' => ['nullable', 'integer', 'min:0'],
             'rank_in_class' => ['nullable', 'integer', 'min:1'],
             'total_students' => ['nullable', 'integer', 'min:1'],
-            'subject_grades' => [$required, 'array'],
+            'subject_grades' => ['nullable', 'array'],
             'principal_remarks' => ['nullable', 'string'],
             'teacher_remarks' => ['nullable', 'string'],
             'conduct_grade' => ['nullable', Rule::in(self::CONDUCT_GRADES)],
-            'issue_date' => [$required, 'date'],
+            'issue_date' => ['nullable', 'date'],
             'is_final' => ['sometimes', 'boolean'],
         ]);
+
+        if (! isset($validated['academic_year']) && isset($validated['year'])) {
+            $validated['academic_year'] = (string) $validated['year'];
+        }
+
+        if (! isset($validated['academic_year']) && ! $isUpdate) {
+            $validated['academic_year'] = (string) now()->year;
+        }
+
+        unset($validated['year']);
+
+        return $validated;
+    }
+
+    private function preparePayload(array $validated, ?ReportCard $existing = null): array
+    {
+        $studentId = (int) ($validated['student_id'] ?? $existing?->student_id ?? 0);
+        $classId = (int) ($validated['class_id'] ?? $existing?->class_id ?? 0);
+
+        $subjects = $this->buildSubjectSummaries(
+            $studentId,
+            $classId,
+            $validated['subject_grades'] ?? ($existing?->subject_grades ?? [])
+        );
+
+        $fallbackAverage = array_key_exists('overall_average', $validated)
+            ? (float) $validated['overall_average']
+            : ($existing?->overall_average !== null ? (float) $existing->overall_average : null);
+
+        $validated['student_id'] = $studentId;
+        $validated['class_id'] = $classId;
+        $validated['term'] = isset($validated['term'])
+            ? (string) $validated['term']
+            : (string) ($existing?->term ?? '');
+        $validated['academic_year'] = (string) ($validated['academic_year'] ?? $existing?->academic_year ?? now()->year);
+        $validated['issue_date'] = $validated['issue_date'] ?? ($existing?->issue_date?->toDateString() ?? now()->toDateString());
+        $validated['is_final'] = array_key_exists('is_final', $validated)
+            ? (bool) $validated['is_final']
+            : ($existing?->is_final ?? false);
+        $validated['total_absences'] = (int) ($validated['total_absences'] ?? $existing?->total_absences ?? 0);
+        $validated['justified_absences'] = (int) ($validated['justified_absences'] ?? $existing?->justified_absences ?? 0);
+        $validated['rank_in_class'] = isset($validated['rank_in_class'])
+            ? (int) $validated['rank_in_class']
+            : ($existing?->rank_in_class ?? null);
+        $validated['total_students'] = isset($validated['total_students'])
+            ? (int) $validated['total_students']
+            : ($existing?->total_students ?? null);
+        $validated['subject_grades'] = $subjects;
+        $validated['overall_average'] = $this->computeOverallAverage($subjects, $fallbackAverage);
+
+        return $validated;
+    }
+
+    private function transformReportCard(ReportCard $reportCard): array
+    {
+        $reportCard->loadMissing([
+            'student:id,name,email',
+            'class:id,name,code,level,section',
+        ]);
+
+        $subjects = $this->buildSubjectSummaries(
+            (int) $reportCard->student_id,
+            (int) $reportCard->class_id,
+            $reportCard->subject_grades ?? []
+        );
+
+        $data = $reportCard->toArray();
+        $data['overall_average'] = $this->computeOverallAverage(
+            $subjects,
+            isset($data['overall_average']) ? (float) $data['overall_average'] : null
+        );
+        $data['subjects'] = $subjects;
+        $data['subject_grades'] = $subjects;
+
+        return $data;
+    }
+
+    private function buildSubjectSummaries(int $studentId, int $classId, array $fallbackGrades = []): array
+    {
+        $class = ClassModel::query()
+            ->with('subjects:id,name')
+            ->find($classId);
+
+        if ($class && $class->subjects->isNotEmpty()) {
+            return $class->subjects
+                ->map(function ($subject) use ($studentId) {
+                    $hasGrades = Grade::query()
+                        ->where('student_id', $studentId)
+                        ->where('subject_id', $subject->id)
+                        ->exists();
+
+                    $average = $hasGrades
+                        ? $this->gradeService->averageForStudent($studentId, (int) $subject->id)
+                        : null;
+
+                    return [
+                        'subject' => $subject->name,
+                        'average' => $average !== null ? round((float) $average, 2) : null,
+                        'max' => 20,
+                        'label' => $average !== null ? $this->gradeService->performanceLabel((float) $average) : null,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        return $this->mapLegacySubjectGrades($fallbackGrades);
+    }
+
+    private function mapLegacySubjectGrades(array $legacyGrades): array
+    {
+        return collect($legacyGrades)
+            ->map(function ($grade) {
+                $subjectName = $grade['subject'] ?? $grade['subject_name'] ?? 'Matiere';
+                $average = isset($grade['average']) && is_numeric($grade['average'])
+                    ? round((float) $grade['average'], 2)
+                    : null;
+
+                return [
+                    'subject' => $subjectName,
+                    'average' => $average,
+                    'max' => 20,
+                    'label' => $average !== null ? $this->gradeService->performanceLabel((float) $average) : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function computeOverallAverage(array $subjects, ?float $fallbackAverage = null): ?float
+    {
+        $averages = collect($subjects)
+            ->pluck('average')
+            ->filter(fn ($value) => $value !== null)
+            ->map(fn ($value) => (float) $value);
+
+        if ($averages->isNotEmpty()) {
+            return round((float) $averages->avg(), 2);
+        }
+
+        return $fallbackAverage !== null ? round((float) $fallbackAverage, 2) : null;
     }
 }
