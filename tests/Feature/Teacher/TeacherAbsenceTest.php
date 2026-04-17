@@ -19,6 +19,19 @@ class TeacherAbsenceTest extends TestCase
             ->assertJsonPath('success', true);
     }
 
+    public function test_teacher_absence_list_honors_per_page_parameter(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        Absence::factory()->count(7)->create(['recorded_by' => $teacher->id]);
+
+        $response = $this->actingAs($teacher)
+            ->getJson('/api/v1/teacher/absences?per_page=3')
+            ->assertOk();
+
+        $this->assertSame(3, (int) $response->json('data.per_page'));
+        $this->assertCount(3, $response->json('data.items'));
+    }
+
     public function test_teacher_cannot_access_admin_absence_endpoint(): void
     {
         $teacher = User::factory()->teacher()->create();
