@@ -1,4 +1,4 @@
-export const APP_NAME = 'School Record Manager';
+export const APP_NAME = 'SchoolSphere';
 
 export const ROLES = {
   ADMIN: 'admin',
@@ -15,7 +15,7 @@ export const STORAGE_KEYS = {
 export const ROLE_LABELS = {
   [ROLES.ADMIN]: 'Administrateur',
   [ROLES.TEACHER]: 'Enseignant',
-  [ROLES.STUDENT]: 'Etudiant',
+  [ROLES.STUDENT]: 'Eleve',
   [ROLES.PARENT]: 'Parent',
 };
 
@@ -34,16 +34,19 @@ export const NAV_ITEMS_BY_ROLE = {
     { to: '/dashboard', label: 'Tableau de bord' },
     { to: '/grades', label: 'Notes' },
     { to: '/absences', label: 'Absences' },
+    { to: '/events', label: 'Evenements' },
   ],
   [ROLES.STUDENT]: [
     { to: '/dashboard', label: 'Tableau de bord' },
     { to: '/grades', label: 'Mes notes' },
     { to: '/absences', label: 'Mes absences' },
+    { to: '/report-cards', label: 'Mes bulletins' },
   ],
   [ROLES.PARENT]: [
     { to: '/dashboard', label: 'Tableau de bord' },
     { to: '/grades', label: 'Notes enfants' },
     { to: '/absences', label: 'Absences enfants' },
+    { to: '/report-cards', label: 'Bulletins enfants' },
   ],
 };
 
@@ -86,6 +89,8 @@ export const API_ENDPOINTS = {
     },
     reportCards: {
       [ROLES.ADMIN]: '/api/v1/admin/report-cards',
+      [ROLES.STUDENT]: '/api/v1/student/report-cards',
+      [ROLES.PARENT]: '/api/v1/parent/report-cards',
     },
     events: {
       [ROLES.ADMIN]: '/api/v1/admin/events',

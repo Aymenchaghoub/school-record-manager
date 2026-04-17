@@ -5,6 +5,44 @@ import { Spinner } from '../../components/ui/Spinner';
 import { getAbsencesPerMonth, getAveragePerSubject } from '../../services/dashboardService';
 
 const EMPTY_SERIES = { labels: [], data: [] };
+const CHART_COLORS = ['#A855F7', '#E040A0', '#22C55E', '#F97316', '#6366F1'];
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+  scales: {
+    x: {
+      grid: {
+        color: '#E2E8F0',
+      },
+      ticks: {
+        color: '#64748B',
+        font: {
+          family: 'Plus Jakarta Sans',
+          size: 12,
+        },
+      },
+    },
+    y: {
+      beginAtZero: true,
+      grid: {
+        color: '#E2E8F0',
+      },
+      ticks: {
+        color: '#64748B',
+        font: {
+          family: 'Plus Jakarta Sans',
+          size: 12,
+        },
+      },
+    },
+  },
+};
 
 function normalizeSeries(payload) {
   return {
@@ -18,6 +56,28 @@ function hasChartData(series) {
     && series.labels.length > 0
     && Array.isArray(series.data)
     && series.data.length > 0;
+}
+
+function ChartLegend({ labels, values }) {
+  if (!labels.length) {
+    return null;
+  }
+
+  return (
+    <div className="chart-legend">
+      {labels.map((label, index) => (
+        <div key={`${label}-${index}`} className="chart-legend-item">
+          <span
+            className="chart-legend-swatch"
+            style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+            aria-hidden="true"
+          />
+          <span>{label}</span>
+          <strong style={{ color: 'var(--color-text)' }}>{values[index] ?? 0}</strong>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function TeacherDashboard() {
@@ -94,12 +154,10 @@ export function TeacherDashboard() {
       labels: subjectSeries.labels,
       datasets: [
         {
-          label: 'Average grade',
+          label: 'Moyenne',
           data: subjectSeries.data,
-          backgroundColor: 'rgba(16, 185, 129, 0.6)',
-          borderColor: 'rgba(5, 150, 105, 1)',
-          borderWidth: 1,
-          borderRadius: 6,
+          backgroundColor: subjectSeries.labels.map((_, index) => CHART_COLORS[index % CHART_COLORS.length]),
+          borderRadius: 8,
         },
       ],
     }),
@@ -113,10 +171,10 @@ export function TeacherDashboard() {
         {
           label: 'Absences',
           data: absenceSeries.data,
-          borderColor: 'rgba(244, 63, 94, 1)',
-          backgroundColor: 'rgba(244, 63, 94, 0.2)',
+          borderColor: CHART_COLORS[1],
+          backgroundColor: 'rgba(224, 64, 160, 0.2)',
           tension: 0.35,
-          pointBackgroundColor: 'rgba(244, 63, 94, 1)',
+          pointBackgroundColor: CHART_COLORS[1],
           pointRadius: 4,
         },
       ],
@@ -124,26 +182,12 @@ export function TeacherDashboard() {
     [absenceSeries]
   );
 
-  const sharedChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-  };
-
   const subjectChartOptions = {
-    ...sharedChartOptions,
+    ...chartOptions,
     scales: {
+      ...chartOptions.scales,
       y: {
-        beginAtZero: true,
+        ...chartOptions.scales.y,
         max: 20,
       },
     },
@@ -152,22 +196,20 @@ export function TeacherDashboard() {
   return (
     <div className="space-y-4">
       <div className="surface-card p-4">
-        <h3 className="text-base font-semibold" style={{ color: 'var(--fg)' }}>
-          Average Grade by Subject
-        </h3>
+        <h3 style={{ color: 'var(--color-text)' }}>Moyenne par matiere</h3>
 
         <div className="relative mt-4 h-[300px]">
           {isSubjectsLoading ? (
             <div className="flex h-full items-center justify-center">
-              <Spinner label="Loading chart..." />
+              <Spinner label="Chargement..." />
             </div>
           ) : null}
 
           {!isSubjectsLoading && subjectsError ? (
             <div className="h-full">
               <EmptyState
-                title="No subject averages available"
-                description="Average grades by subject will appear once subjects have recorded grades."
+                title="Aucune donnee"
+                description="Les moyennes par matiere apparaitront des que des notes seront enregistrees."
               />
             </div>
           ) : null}
@@ -175,8 +217,8 @@ export function TeacherDashboard() {
           {!isSubjectsLoading && !subjectsError && !hasChartData(subjectSeries) ? (
             <div className="h-full">
               <EmptyState
-                title="No subject averages available"
-                description="Average grades by subject will appear once subjects have recorded grades."
+                title="Aucune donnee"
+                description="Les moyennes par matiere apparaitront des que des notes seront enregistrees."
               />
             </div>
           ) : null}
@@ -185,25 +227,27 @@ export function TeacherDashboard() {
             <Bar data={subjectBarChartData} options={subjectChartOptions} />
           ) : null}
         </div>
+
+        {!isSubjectsLoading && !subjectsError && hasChartData(subjectSeries) ? (
+          <ChartLegend labels={subjectSeries.labels} values={subjectSeries.data} />
+        ) : null}
       </div>
 
       <div className="surface-card p-4">
-        <h3 className="text-base font-semibold" style={{ color: 'var(--fg)' }}>
-          Absences per Month
-        </h3>
+        <h3 style={{ color: 'var(--color-text)' }}>Absences par mois</h3>
 
         <div className="relative mt-4 h-[300px]">
           {isAbsencesLoading ? (
             <div className="flex h-full items-center justify-center">
-              <Spinner label="Loading chart..." />
+              <Spinner label="Chargement..." />
             </div>
           ) : null}
 
           {!isAbsencesLoading && absencesError ? (
             <div className="h-full">
               <EmptyState
-                title="No absence history available"
-                description="Monthly absence trends will appear when absence records are available."
+                title="Aucune donnee"
+                description="La tendance des absences apparaitra lorsque des absences seront enregistrees."
               />
             </div>
           ) : null}
@@ -211,16 +255,20 @@ export function TeacherDashboard() {
           {!isAbsencesLoading && !absencesError && !hasChartData(absenceSeries) ? (
             <div className="h-full">
               <EmptyState
-                title="No absence history available"
-                description="Monthly absence trends will appear when absence records are available."
+                title="Aucune donnee"
+                description="La tendance des absences apparaitra lorsque des absences seront enregistrees."
               />
             </div>
           ) : null}
 
           {!isAbsencesLoading && !absencesError && hasChartData(absenceSeries) ? (
-            <Line data={absencesLineChartData} options={sharedChartOptions} />
+            <Line data={absencesLineChartData} options={chartOptions} />
           ) : null}
         </div>
+
+        {!isAbsencesLoading && !absencesError && hasChartData(absenceSeries) ? (
+          <ChartLegend labels={absenceSeries.labels} values={absenceSeries.data} />
+        ) : null}
       </div>
     </div>
   );

@@ -1,17 +1,18 @@
 import { Link } from 'react-router-dom';
+import { Button } from '../components/ui/Button';
 
 export function NotFoundPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="surface-card max-w-lg p-8 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">404</p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900">Page introuvable</h1>
-        <p className="mt-3 text-slate-600">La page demandee n'existe pas ou a ete deplacee.</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--color-muted)' }}>404</p>
+        <h1 className="mt-2 text-3xl font-bold" style={{ color: 'var(--color-text)' }}>Page introuvable</h1>
+        <p className="mt-3" style={{ color: 'var(--color-muted)' }}>La page demandee n'existe pas ou a ete deplacee.</p>
         <Link
           to="/dashboard"
-          className="mt-6 inline-flex rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700"
+          className="mt-6 inline-flex"
         >
-          Aller au dashboard
+          <Button>Aller au tableau de bord</Button>
         </Link>
       </div>
     </div>

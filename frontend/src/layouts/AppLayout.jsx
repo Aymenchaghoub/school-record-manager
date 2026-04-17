@@ -14,12 +14,12 @@ export function AppLayout() {
         role={role || user?.role}
         isOpen={sidebarOpen}
         onNavigate={() => setSidebarOpen(false)}
+        onLogout={logout}
       />
 
-      <div className="md:pl-72">
+      <div className="md:pl-56">
         <TopBar
           user={user}
-          onLogout={logout}
           onToggleSidebar={() => setSidebarOpen((open) => !open)}
         />
 
@@ -33,7 +33,8 @@ export function AppLayout() {
           type="button"
           aria-label="Fermer le panneau lateral"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-slate-900/40 md:hidden"
+          className="fixed inset-0 z-30 md:hidden"
+          style={{ background: 'rgba(15, 23, 42, 0.45)' }}
         />
       ) : null}
     </div>

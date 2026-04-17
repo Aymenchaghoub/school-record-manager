@@ -30,6 +30,19 @@ const monthFilterOptions = [
   { value: '12', label: 'Dec' },
 ];
 
+function resolveAbsenceStatus(item) {
+  if (item?.is_justified) {
+    return { label: 'Justifiee', tone: 'success' };
+  }
+
+  const hasReason = Boolean(String(item?.reason || item?.justification || '').trim());
+  if (!hasReason) {
+    return { label: 'En attente de motif', tone: 'warning' };
+  }
+
+  return { label: 'Non justifiee', tone: 'danger' };
+}
+
 export function AbsencesPage() {
   const { user } = useAuth();
   const role = user?.role;
@@ -168,11 +181,11 @@ export function AbsencesPage() {
         {
           key: 'is_justified',
           label: 'Justifiee',
-          render: (item) => (
-            <Badge tone={item.is_justified ? 'success' : 'warning'}>
-              {item.is_justified ? 'Oui' : 'Non'}
-            </Badge>
-          ),
+          render: (item) => {
+            const status = resolveAbsenceStatus(item);
+
+            return <Badge tone={status.tone}>{status.label}</Badge>;
+          },
         },
         { key: 'reason', label: 'Motif' },
       ]}

@@ -27,16 +27,29 @@ const formatAverageOnTwenty = (average) => {
   return `${parsedAverage.toFixed(2)}/20`;
 };
 
+const formatSubjectAverageOnTwenty = (average) => {
+  if (average === null || average === undefined || average === '') {
+    return '—';
+  }
+
+  const parsedAverage = Number(average);
+  if (!Number.isFinite(parsedAverage)) {
+    return '—';
+  }
+
+  return `${parsedAverage.toFixed(1)}/20`;
+};
+
 const performanceBadge = (average) => {
   if (average === null || average === undefined || average === '') return null;
 
   const parsedAverage = Number(average);
   if (!Number.isFinite(parsedAverage)) return null;
 
-  if (parsedAverage >= 16) return <span className="badge-green">Excellent</span>;
-  if (parsedAverage >= 12) return <span className="badge-blue">Bien</span>;
-  if (parsedAverage >= 10) return <span className="badge-yellow">Passable</span>;
-  return <span className="badge-red">Insuffisant</span>;
+  if (parsedAverage >= 16) return <Badge tone="success">Excellent</Badge>;
+  if (parsedAverage >= 12) return <Badge tone="info">Bien</Badge>;
+  if (parsedAverage >= 10) return <Badge tone="warning">Passable</Badge>;
+  return <Badge tone="danger">Insuffisant</Badge>;
 };
 
 export function ReportCardsPage() {
@@ -52,14 +65,22 @@ export function ReportCardsPage() {
 
   return (
     <div className="report-card-content space-y-4">
-      <div className="report-card-header flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-slate-900">
+      <div
+        className="report-card-header flex items-center justify-between gap-3 rounded-xl border p-4"
+        style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface)' }}
+      >
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Bulletin scolaire</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Impression propre pour consultation et archivage</p>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Bulletin scolaire</h2>
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Impression propre pour consultation et archivage</p>
         </div>
         <button
           onClick={() => window.print()}
-          className="print:hidden flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          className="print:hidden flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+          style={{
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text)',
+            background: 'var(--color-surface)',
+          }}
           aria-label="Imprimer ce bulletin"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -117,12 +138,12 @@ export function ReportCardsPage() {
                 <div className="space-y-1.5">
                   {subjects.map((subject, index) => (
                     <div key={`${subject.subject || subject.subject_name || 'subject'}-${index}`} className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-gray-600 dark:text-gray-300">
+                      <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
                         {subject.subject || subject.subject_name || `Matiere ${index + 1}`}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">
-                          {subject.average !== null && subject.average !== undefined ? `${subject.average}/20` : '—'}
+                          {formatSubjectAverageOnTwenty(subject.average)}
                         </span>
                         {performanceBadge(subject.average)}
                       </div>

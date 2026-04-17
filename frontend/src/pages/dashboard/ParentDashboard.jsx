@@ -7,6 +7,44 @@ import { useAuth } from '../../hooks/useAuth';
 import { getGradeEvolution } from '../../services/dashboardService';
 
 const EMPTY_SERIES = { labels: [], data: [] };
+const CHART_COLORS = ['#A855F7', '#E040A0', '#22C55E', '#F97316', '#6366F1'];
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+  scales: {
+    x: {
+      grid: {
+        color: '#E2E8F0',
+      },
+      ticks: {
+        color: '#64748B',
+        font: {
+          family: 'Plus Jakarta Sans',
+          size: 12,
+        },
+      },
+    },
+    y: {
+      beginAtZero: true,
+      grid: {
+        color: '#E2E8F0',
+      },
+      ticks: {
+        color: '#64748B',
+        font: {
+          family: 'Plus Jakarta Sans',
+          size: 12,
+        },
+      },
+    },
+  },
+};
 
 function normalizeSeries(payload) {
   return {
@@ -39,6 +77,28 @@ function resolveLinkedChildId(user) {
   }
 
   return null;
+}
+
+function ChartLegend({ labels, values }) {
+  if (!labels.length) {
+    return null;
+  }
+
+  return (
+    <div className="chart-legend">
+      {labels.map((label, index) => (
+        <div key={`${label}-${index}`} className="chart-legend-item">
+          <span
+            className="chart-legend-swatch"
+            style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+            aria-hidden="true"
+          />
+          <span>{label}</span>
+          <strong style={{ color: 'var(--color-text)' }}>{values[index] ?? 0}</strong>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ParentDashboard({ payload }) {
@@ -99,10 +159,10 @@ export function ParentDashboard({ payload }) {
         {
           label: 'Note',
           data: evolutionSeries.data,
-          borderColor: 'rgba(14, 116, 144, 1)',
-          backgroundColor: 'rgba(14, 116, 144, 0.2)',
+          borderColor: CHART_COLORS[0],
+          backgroundColor: 'rgba(168, 85, 247, 0.2)',
           tension: 0.35,
-          pointBackgroundColor: 'rgba(14, 116, 144, 1)',
+          pointBackgroundColor: CHART_COLORS[0],
           pointRadius: 4,
         },
       ],
@@ -110,33 +170,18 @@ export function ParentDashboard({ payload }) {
     [evolutionSeries]
   );
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-  };
-
   if (!linkedChildId) {
     return (
       <EmptyState
-        title="Aucun enfant lie a votre compte"
+        title="Aucun enfant associe"
         description="Associez un profil eleve a votre compte pour consulter les indicateurs scolaires."
       />
     );
   }
 
   const averageGrade = Number.isFinite(Number(stats.average_grade))
-    ? Number(stats.average_grade).toFixed(1)
-    : '—';
+    ? `${Number(stats.average_grade).toFixed(1)}/20`
+    : '-';
   const totalAbsences = Number(stats.total_absences ?? 0);
 
   return (
@@ -147,22 +192,20 @@ export function ParentDashboard({ payload }) {
       </div>
 
       <div className="surface-card p-4">
-        <h3 className="text-base font-semibold" style={{ color: 'var(--fg)' }}>
-          Evolution des notes
-        </h3>
+        <h3 style={{ color: 'var(--color-text)' }}>Evolution des notes</h3>
 
         <div className="relative mt-4 h-[300px]">
           {isEvolutionLoading ? (
             <div className="flex h-full items-center justify-center">
-              <Spinner label="Chargement du graphique..." />
+              <Spinner label="Chargement..." />
             </div>
           ) : null}
 
           {!isEvolutionLoading && evolutionError ? (
             <div className="h-full">
               <EmptyState
-                title="Impossible de charger l'evolution des notes"
-                description="Les donnees d'evolution de l'enfant sont indisponibles pour le moment."
+                title="Aucune donnee"
+                description="Impossible de charger l'evolution des notes pour le moment."
               />
             </div>
           ) : null}
@@ -170,7 +213,7 @@ export function ParentDashboard({ payload }) {
           {!isEvolutionLoading && !evolutionError && !hasChartData(evolutionSeries) ? (
             <div className="h-full">
               <EmptyState
-                title="Aucune note disponible"
+                title="Aucune donnee"
                 description="Le graphique apparaitra des que des notes seront enregistrees."
               />
             </div>
@@ -180,6 +223,10 @@ export function ParentDashboard({ payload }) {
             <Line data={evolutionLineChartData} options={chartOptions} />
           ) : null}
         </div>
+
+        {!isEvolutionLoading && !evolutionError && hasChartData(evolutionSeries) ? (
+          <ChartLegend labels={evolutionSeries.labels} values={evolutionSeries.data} />
+        ) : null}
       </div>
     </div>
   );

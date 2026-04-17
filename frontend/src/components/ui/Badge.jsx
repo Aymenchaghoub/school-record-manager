@@ -1,14 +1,42 @@
 const tones = {
-  slate: 'bg-slate-100 text-slate-700 border-slate-200',
-  brand: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-  success: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  warning: 'bg-amber-100 text-amber-800 border-amber-200',
-  danger: 'bg-red-100 text-red-800 border-red-200',
+  success: {
+    background: '#DCFCE7',
+    color: '#15803D',
+    borderColor: '#BBF7D0',
+  },
+  danger: {
+    background: '#FEE2E2',
+    color: '#DC2626',
+    borderColor: '#FECACA',
+  },
+  warning: {
+    background: '#FEF9C3',
+    color: '#A16207',
+    borderColor: '#FDE68A',
+  },
+  info: {
+    background: '#EDE9FE',
+    color: '#7C3AED',
+    borderColor: '#DDD6FE',
+  },
+  neutral: {
+    background: '#F1F5F9',
+    color: '#475569',
+    borderColor: '#E2E8F0',
+  },
+};
+
+const toneAlias = {
+  brand: 'info',
+  slate: 'neutral',
 };
 
 export function Badge({ tone = 'slate', children }) {
+  const normalizedTone = toneAlias[tone] || tone;
+  const style = tones[normalizedTone] || tones.neutral;
+
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}>
+    <span className="ui-badge" style={style}>
       {children}
     </span>
   );

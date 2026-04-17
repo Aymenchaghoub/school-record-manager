@@ -2,43 +2,101 @@ import { useEffect, useRef } from 'react';
 
 export function Modal({ title, isOpen, onClose, children, footer }) {
   const modalRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    const firstFocusable = modalRef.current?.querySelector(
-      'button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    firstFocusable?.focus();
-  }, [isOpen]);
+    const getFocusableElements = () => {
+      const panel = modalRef.current;
+      if (!panel) {
+        return [];
+      }
+
+      const candidates = panel.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+
+      return Array.from(candidates).filter(
+        (node) => node instanceof HTMLElement && !node.hasAttribute('disabled')
+      );
+    };
+
+    const initialFocusable = getFocusableElements();
+    const firstField = initialFocusable.find((element) =>
+      ['INPUT', 'SELECT', 'TEXTAREA'].includes(element.tagName)
+    );
+    (firstField || initialFocusable[0] || closeButtonRef.current)?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose?.();
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusable = getFocusableElements();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocusRef.current?.focus?.();
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+    <div className="theme-modal-overlay" onMouseDown={onClose}>
       <div
         ref={modalRef}
-        className="theme-modal-surface w-full max-w-2xl rounded-2xl border shadow-soft"
+        className="theme-modal-surface"
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="theme-modal-divider flex items-center justify-between border-b px-5 py-4">
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--fg)' }}>
+          <h2 className="text-[22px] font-semibold" style={{ color: 'var(--color-text)' }}>
             {title}
-          </h3>
+          </h2>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label="Fermer la fenetre"
             className="theme-modal-close rounded-md px-2 py-1 transition"
           >
-            x
+            &times;
           </button>
         </div>
 

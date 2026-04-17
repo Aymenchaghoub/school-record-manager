@@ -280,38 +280,40 @@ export function CrudPage({
       />
 
       <div className="surface-card p-4">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          {searchEnabled ? (
-            <Input
-              placeholder={searchPlaceholder}
-              value={search}
-              onChange={(event) => {
-                setPagination((prev) => ({ ...prev, currentPage: 1 }));
-                setSearch(event.target.value);
-              }}
-              className="md:max-w-sm"
-            />
-          ) : (
-            <div />
-          )}
-          <Button variant="secondary" onClick={loadItems}>
-            Rafraichir
-          </Button>
-        </div>
-
-        {filters.length > 0 ? (
-          <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {filters.map((filter) => (
-              <Select
-                key={filter.name}
-                label={filter.label}
-                value={filterValues[filter.name] ?? ''}
-                onChange={(event) => handleFilterChange(filter.name, event.target.value)}
-                options={filter.options || []}
+        <div className="crud-filters-card mb-4 space-y-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            {searchEnabled ? (
+              <Input
+                placeholder={searchPlaceholder}
+                value={search}
+                onChange={(event) => {
+                  setPagination((prev) => ({ ...prev, currentPage: 1 }));
+                  setSearch(event.target.value);
+                }}
+                className="md:max-w-sm"
               />
-            ))}
+            ) : (
+              <div />
+            )}
+            <Button variant="secondary" onClick={loadItems}>
+              Rafraichir
+            </Button>
           </div>
-        ) : null}
+
+          {filters.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {filters.map((filter) => (
+                <Select
+                  key={filter.name}
+                  label={filter.label}
+                  value={filterValues[filter.name] ?? ''}
+                  onChange={(event) => handleFilterChange(filter.name, event.target.value)}
+                  options={filter.options || []}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         {error ? <Alert variant="danger">{error}</Alert> : null}
         {successMessage ? <Alert variant="success">{successMessage}</Alert> : null}
@@ -332,22 +334,22 @@ export function CrudPage({
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="theme-table min-w-full text-left text-sm">
+            <table className="crud-table">
               <thead>
                 <tr className="border-b">
                   {columns.map((column) => (
-                    <th key={column.key} className="px-3 py-2 font-semibold">
+                    <th key={column.key}>
                       {column.label}
                     </th>
                   ))}
-                  {(canEdit || canDelete) ? <th className="px-3 py-2 font-semibold">Actions</th> : null}
+                  {(canEdit || canDelete) ? <th>Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => (
                   <tr key={item[idKey]} className="border-b">
                     {columns.map((column) => (
-                      <td key={column.key} className="px-3 py-3 align-top">
+                      <td key={column.key}>
                         {column.render
                           ? column.render(item)
                           : formatCellValue(item[column.key], column.format)}
@@ -355,10 +357,10 @@ export function CrudPage({
                     ))}
 
                     {(canEdit || canDelete) ? (
-                      <td className="px-3 py-3">
+                      <td>
                         <div className="flex gap-2">
                           {canEdit ? (
-                            <Button variant="subtle" onClick={() => openEditModal(item)} aria-label="Modifier cet element">
+                            <Button variant="ghost" onClick={() => openEditModal(item)} aria-label="Modifier cet element">
                               Modifier
                             </Button>
                           ) : null}
@@ -438,13 +440,20 @@ export function CrudPage({
 
             if (field.type === 'checkbox') {
               return (
-                <label key={field.name} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
+                <label
+                  key={field.name}
+                  className="flex items-center gap-2 rounded-xl border px-3 py-2"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    background: 'var(--color-surface)',
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={Boolean(formValues[field.name])}
                     onChange={(event) => handleChange(field.name, event.target.checked)}
                   />
-                  <span className="text-sm text-slate-700">{field.label}</span>
+                  <span style={{ fontSize: '13px', color: 'var(--color-text)' }}>{field.label}</span>
                 </label>
               );
             }

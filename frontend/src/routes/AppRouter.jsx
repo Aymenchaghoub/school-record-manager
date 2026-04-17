@@ -77,7 +77,7 @@ export function AppRouter() {
             <Route
               path="/report-cards"
               element={
-                <PrivateRoute roles={[ROLES.ADMIN]}>
+                <PrivateRoute roles={[ROLES.ADMIN, ROLES.STUDENT, ROLES.PARENT]}>
                   <ReportCardsPage />
                 </PrivateRoute>
               }
@@ -86,7 +86,7 @@ export function AppRouter() {
             <Route
               path="/events"
               element={
-                <PrivateRoute roles={[ROLES.ADMIN]}>
+                <PrivateRoute roles={[ROLES.ADMIN, ROLES.TEACHER]}>
                   <EventsPage />
                 </PrivateRoute>
               }

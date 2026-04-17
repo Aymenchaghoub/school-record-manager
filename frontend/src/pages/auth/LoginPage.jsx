@@ -45,12 +45,43 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-soft">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12" style={{ background: 'var(--color-bg)' }}>
+      <div
+        className="w-full max-w-md p-8"
+        style={{
+          borderRadius: '20px',
+          border: '1px solid var(--color-border)',
+          background: 'var(--color-surface)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
         <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">SchoolSphere</p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">Connexion</h1>
-          <p className="mt-1 text-sm text-slate-500">Accedez a votre espace selon votre role.</p>
+          <div className="mb-2 flex items-center gap-2">
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold"
+              style={{ background: 'var(--color-primary-gradient)', color: '#ffffff' }}
+              aria-hidden="true"
+            >
+              S
+            </div>
+            <p
+              className="text-sm font-semibold uppercase tracking-[0.16em]"
+              style={{
+                background: 'var(--color-primary-gradient)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              SchoolSphere
+            </p>
+          </div>
+          <h1 className="mt-2" style={{ fontSize: 'var(--font-size-h2)', fontWeight: 700, color: 'var(--color-text)' }}>
+            Connexion
+          </h1>
+          <p className="mt-1" style={{ fontSize: '13px', color: 'var(--color-muted)' }}>
+            Accedez a votre espace selon votre role.
+          </p>
         </div>
 
         {error ? <Alert variant="danger">{error}</Alert> : null}
@@ -74,7 +105,7 @@ export function LoginPage() {
             required
           />
 
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-muted)' }}>
             <input
               type="checkbox"
               checked={remember}

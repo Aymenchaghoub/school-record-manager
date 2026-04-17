@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { authService } from '../../services/authService';
+import { Alert } from '../../components/ui/Alert';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
@@ -72,8 +73,8 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold">Mon profil</h1>
-      {success ? <p className="mb-4 text-green-600">Profil mis a jour avec succes.</p> : null}
-      {error ? <p className="mb-4 text-red-600">{error}</p> : null}
+      {success ? <Alert variant="success">Profil mis a jour avec succes.</Alert> : null}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input

@@ -1,18 +1,27 @@
-export function StatCard({ label, value, accent = 'cyan' }) {
+export function StatCard({ label, value, accent = 'cyan', delta }) {
   const accents = {
-    cyan: 'from-cyan-500/20 to-cyan-200/30 text-cyan-700',
-    emerald: 'from-emerald-500/20 to-emerald-200/30 text-emerald-700',
-    amber: 'from-amber-500/20 to-amber-200/30 text-amber-700',
-    rose: 'from-rose-500/20 to-rose-200/30 text-rose-700',
+    cyan: '#A855F7',
+    emerald: '#22C55E',
+    amber: '#F59E0B',
+    rose: '#EF4444',
   };
 
+  const accentColor = accents[accent] || accents.cyan;
+  const deltaIsPositive = typeof delta === 'string' ? !delta.trim().startsWith('-') : Boolean(delta >= 0);
+
   return (
-    <div className="surface-card p-4">
-      <div className={`mb-3 h-2 w-20 rounded-full bg-gradient-to-r ${accents[accent]}`} />
-      <p className="theme-muted text-sm font-medium">{label}</p>
-      <p className="mt-2 text-2xl font-bold" style={{ color: 'var(--fg)' }}>
+    <div className="kpi-card">
+      <div className="mb-3 h-1.5 w-16 rounded-full" style={{ backgroundColor: accentColor }} />
+      <p className="kpi-label">{label}</p>
+      <p className="kpi-value">
         {value}
       </p>
+      {delta !== undefined && delta !== null && String(delta) !== '' ? (
+        <p className={`kpi-delta ${deltaIsPositive ? 'kpi-delta-positive' : 'kpi-delta-negative'}`}>
+          {deltaIsPositive ? '+' : ''}
+          {delta}
+        </p>
+      ) : null}
     </div>
   );
 }
