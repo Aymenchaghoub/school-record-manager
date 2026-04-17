@@ -42,3 +42,6 @@ audit_*.txt
 audit_*.csv
 rapport.md
 start-project.ps1
+
+# Keep documentation local only
+docs/
