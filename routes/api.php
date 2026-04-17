@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/grades/{grade}', [GradeApiController::class, 'show']);
             Route::get('/absences', [AbsenceApiController::class, 'index']);
             Route::get('/absences/{absence}', [AbsenceApiController::class, 'show']);
+            Route::apiResource('report-cards', ReportCardApiController::class)->only(['index', 'show']);
         });
 
         Route::prefix('parent')->middleware('role:parent')->group(function () {
@@ -56,6 +57,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/children/grades/{grade}', [GradeApiController::class, 'show']);
             Route::get('/children/absences', [AbsenceApiController::class, 'index']);
             Route::get('/children/absences/{absence}', [AbsenceApiController::class, 'show']);
+            Route::apiResource('report-cards', ReportCardApiController::class)->only(['index', 'show']);
             Route::get('/events', [EventApiController::class, 'parentIndex']);
         });
 
