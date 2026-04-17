@@ -33,7 +33,7 @@ class ReportCardApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $search = trim((string) $request->input('search', ''));
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 500);
 
         $query = ReportCard::query()
             ->with([
@@ -205,9 +205,14 @@ class ReportCardApiController extends Controller
         $studentId = (int) ($validated['student_id'] ?? $existing?->student_id ?? 0);
         $classId = (int) ($validated['class_id'] ?? $existing?->class_id ?? 0);
 
+        $activeTerm = isset($validated['term'])
+            ? (string) $validated['term']
+            : (string) ($existing?->term ?? '');
+
         $subjects = $this->buildSubjectSummaries(
             $studentId,
             $classId,
+            $activeTerm,
             $validated['subject_grades'] ?? ($existing?->subject_grades ?? [])
         );
 
@@ -217,9 +222,7 @@ class ReportCardApiController extends Controller
 
         $validated['student_id'] = $studentId;
         $validated['class_id'] = $classId;
-        $validated['term'] = isset($validated['term'])
-            ? (string) $validated['term']
-            : (string) ($existing?->term ?? '');
+        $validated['term'] = $activeTerm;
         $validated['academic_year'] = (string) ($validated['academic_year'] ?? $existing?->academic_year ?? now()->year);
         $validated['issue_date'] = $validated['issue_date'] ?? ($existing?->issue_date?->toDateString() ?? now()->toDateString());
         $validated['is_final'] = array_key_exists('is_final', $validated)
@@ -249,6 +252,7 @@ class ReportCardApiController extends Controller
         $subjects = $this->buildSubjectSummaries(
             (int) $reportCard->student_id,
             (int) $reportCard->class_id,
+            (string) $reportCard->term,
             $reportCard->subject_grades ?? []
         );
 
@@ -263,7 +267,7 @@ class ReportCardApiController extends Controller
         return $data;
     }
 
-    private function buildSubjectSummaries(int $studentId, int $classId, array $fallbackGrades = []): array
+    private function buildSubjectSummaries(int $studentId, int $classId, ?string $term = null, array $fallbackGrades = []): array
     {
         $class = ClassModel::query()
             ->with('subjects:id,name')
@@ -271,15 +275,34 @@ class ReportCardApiController extends Controller
 
         if ($class && $class->subjects->isNotEmpty()) {
             return $class->subjects
-                ->map(function ($subject) use ($studentId) {
-                    $hasGrades = Grade::query()
+                ->map(function ($subject) use ($studentId, $classId, $term) {
+                    $gradesQuery = Grade::query()
                         ->where('student_id', $studentId)
+                        ->where('class_id', $classId)
                         ->where('subject_id', $subject->id)
-                        ->exists();
+                        ->when($term !== null && trim($term) !== '', function ($query) use ($term) {
+                            $query->where('term', $term);
+                        });
 
-                    $average = $hasGrades
-                        ? $this->gradeService->averageForStudent($studentId, (int) $subject->id)
-                        : null;
+                    $grades = $gradesQuery
+                        ->get(['value', 'weight']);
+
+                    $average = null;
+
+                    if ($grades->isNotEmpty()) {
+                        $weightedScore = 0.0;
+                        $totalWeight = 0.0;
+
+                        foreach ($grades as $grade) {
+                            $weight = (float) ($grade->weight ?: 1);
+                            $weightedScore += ((float) $grade->value) * $weight;
+                            $totalWeight += $weight;
+                        }
+
+                        $average = $totalWeight > 0
+                            ? round($weightedScore / $totalWeight, 2)
+                            : null;
+                    }
 
                     return [
                         'subject' => $subject->name,
