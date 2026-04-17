@@ -16,7 +16,7 @@ class SubjectApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $search = trim((string) $request->input('search', ''));
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 500);
 
         $query = Subject::query()
             ->with(['teacher:id,name,email'])
