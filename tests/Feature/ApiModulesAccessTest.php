@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ClassModel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -66,5 +67,18 @@ class ApiModulesAccessTest extends TestCase
         $this->actingAs($parent)
                 ->getJson('/api/v1/parent/report-cards')
             ->assertOk();
+    }
+
+    public function test_admin_classes_list_honors_per_page_parameter(): void
+    {
+        $admin = User::factory()->admin()->create();
+        ClassModel::factory()->count(6)->create();
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/v1/admin/classes?per_page=3')
+            ->assertOk();
+
+        $this->assertSame(3, (int) $response->json('data.per_page'));
+        $this->assertCount(3, $response->json('data.items'));
     }
 }
