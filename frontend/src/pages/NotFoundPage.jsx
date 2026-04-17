@@ -12,7 +12,7 @@ export function NotFoundPage() {
           to="/dashboard"
           className="mt-6 inline-flex"
         >
-          <Button>Aller au tableau de bord</Button>
+          <Button variant="primary">Aller au tableau de bord</Button>
         </Link>
       </div>
     </div>
