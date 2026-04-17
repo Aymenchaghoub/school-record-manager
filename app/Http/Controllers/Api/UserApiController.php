@@ -19,6 +19,7 @@ class UserApiController extends Controller
         $search = trim((string) $request->input('search', ''));
         $role = trim((string) $request->input('role', ''));
         $isActive = $request->input('is_active');
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 500);
 
         $query = User::query()->latest();
 
@@ -34,7 +35,7 @@ class UserApiController extends Controller
             $query->where('is_active', filter_var($isActive, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? true);
         }
 
-        return $this->paginated($query->paginate(10)->withQueryString(), 'Users fetched successfully.');
+        return $this->paginated($query->paginate($perPage)->withQueryString(), 'Users fetched successfully.');
     }
 
     public function store(StoreUserRequest $request): JsonResponse
