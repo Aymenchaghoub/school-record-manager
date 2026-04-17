@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import FR from '../i18n/fr';
 
 const routeLabelMap = {
   dashboard: 'Tableau de bord',
@@ -27,6 +28,30 @@ const roleLabelMap = {
   parent: 'PARENT',
 };
 
+function getInitials(user) {
+  const first = String(user?.first_name || '').trim();
+  const last = String(user?.last_name || '').trim();
+
+  if (first || last) {
+    return `${first.charAt(0)}${last.charAt(0)}`.trim().toUpperCase() || '?';
+  }
+
+  const nameParts = String(user?.name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (nameParts.length === 0) {
+    return '?';
+  }
+
+  if (nameParts.length === 1) {
+    return nameParts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`.toUpperCase();
+}
+
 export function TopBar({ user, onToggleSidebar }) {
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
@@ -38,7 +63,7 @@ export function TopBar({ user, onToggleSidebar }) {
   const notificationCount = Number(user?.notifications_count || user?.unread_notifications || 0);
   const roleBadgeClass = roleBadgeClassMap[role] || 'role-badge-student';
   const roleLabel = roleLabelMap[role] || String(role || '-').toUpperCase();
-  const initial = (user?.first_name?.[0] || user?.name?.[0] || '?').toUpperCase();
+  const initials = getInitials(user);
 
   return (
     <header className="app-topbar sticky top-0 z-30 border-b px-4 py-3 backdrop-blur lg:px-8">
@@ -48,7 +73,7 @@ export function TopBar({ user, onToggleSidebar }) {
           onClick={onToggleSidebar}
           className="inline-flex items-center gap-2 rounded-md border px-3 py-1 text-sm font-medium transition-colors duration-150 md:hidden"
           style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-          aria-label="Basculer le menu de navigation"
+          aria-label={FR.topBar.menuLabel}
         >
           <span aria-hidden="true">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -80,7 +105,7 @@ export function TopBar({ user, onToggleSidebar }) {
           <input
             type="search"
             className="topbar-search"
-            placeholder="Rechercher un eleve, une classe..."
+            placeholder={FR.topBar.searchPlaceholder}
             aria-label="Recherche globale"
           />
         </div>
@@ -90,36 +115,79 @@ export function TopBar({ user, onToggleSidebar }) {
             type="button"
             onClick={toggleTheme}
             className="topbar-icon-btn"
-            aria-label={isDark ? 'Activer le mode clair' : 'Activer le mode sombre'}
-            title={isDark ? 'Mode clair' : 'Mode sombre'}
+            aria-label={isDark ? FR.topBar.themeToLight : FR.topBar.themeToDark}
+            title={isDark ? FR.topBar.modeLight : FR.topBar.modeDark}
           >
-            <span aria-hidden="true">{isDark ? 'L' : 'N'}</span>
+            {isDark ? (
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M12 2V5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M12 19V22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M2 12H5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M19 12H22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M4.9 4.9L7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M17 17L19.1 19.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M17 7L19.1 4.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M4.9 19.1L7 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M20.3 14.7A8.7 8.7 0 1 1 9.3 3.7a7 7 0 1 0 11 11z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
           </button>
 
           <button
             type="button"
             className="topbar-icon-btn"
-            aria-label="Voir les notifications"
+            aria-label={FR.topBar.notificationsLabel}
             title="Notifications"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 4a5 5 0 0 0-5 5v2.6l-1.5 2.7a1 1 0 0 0 .87 1.5h11.26a1 1 0 0 0 .87-1.5L17 11.6V9a5 5 0 0 0-5-5z" stroke="currentColor" strokeWidth="1.8" />
-              <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 4a5 5 0 0 0-5 5v2.6l-1.5 2.7a1 1 0 0 0 .87 1.5h11.26a1 1 0 0 0 .87-1.5L17 11.6V9a5 5 0 0 0-5-5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             {notificationCount > 0 ? <span className="topbar-icon-badge">{notificationCount}</span> : null}
           </button>
 
           <div className="flex items-center gap-2 rounded-full px-1 py-1" style={{ background: 'var(--color-surface)' }}>
-            <Link to="/profile" className="flex items-center gap-2 pl-1" aria-label="Voir mon profil">
+            <Link to="/profile" className="flex items-center gap-2 pl-1" aria-label={FR.topBar.profileLabel}>
               <div
                 className="flex h-9 w-9 select-none items-center justify-center rounded-full text-sm font-bold"
-                style={{ background: 'var(--color-primary-gradient)', color: '#ffffff' }}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  background: 'linear-gradient(135deg, #E040A0, #A855F7)',
+                  color: '#ffffff',
+                }}
               >
-                {initial}
+                {initials}
               </div>
               <div className="hidden flex-col leading-tight sm:flex">
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text)' }}>
-                  {user?.first_name ? `${user.first_name} ${user?.last_name ?? ''}`.trim() : user?.name || 'Utilisateur'}
+                  {user?.first_name
+                    ? `${user.first_name} ${user?.last_name ?? ''}`.trim()
+                    : user?.name || FR.topBar.profileFallbackName}
                 </span>
                 <span className={`role-badge ${roleBadgeClass}`}>{roleLabel}</span>
               </div>
