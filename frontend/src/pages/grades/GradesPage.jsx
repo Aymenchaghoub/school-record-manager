@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
+import FR from '../../i18n/fr';
 import apiClient from '../../services/apiClient';
 import { createGradesService } from '../../services/gradesService';
 import { ROLES } from '../../utils/constants';
@@ -20,8 +21,14 @@ const gradeTypeOptions = [
 export function GradesPage() {
   const { user } = useAuth();
   const role = user?.role;
-  const [subjectOptions, setSubjectOptions] = useState([
+  const [subjectFilterOptions, setSubjectFilterOptions] = useState([
     { value: '', label: 'Toutes les matieres' },
+  ]);
+  const [classFilterOptions, setClassFilterOptions] = useState([
+    { value: '', label: 'Toutes les classes' },
+  ]);
+  const [termFilterOptions, setTermFilterOptions] = useState([
+    { value: '', label: 'Toutes les periodes' },
   ]);
   const [studentFieldOptions, setStudentFieldOptions] = useState([{ value: '', label: 'Selectionner un eleve' }]);
   const [subjectFieldOptions, setSubjectFieldOptions] = useState([{ value: '', label: 'Selectionner une matiere' }]);
@@ -40,11 +47,23 @@ export function GradesPage() {
       {
         name: 'subject',
         label: 'Matiere',
-        options: subjectOptions,
+        options: subjectFilterOptions,
+        defaultValue: '',
+      },
+      {
+        name: 'class',
+        label: 'Classe',
+        options: classFilterOptions,
+        defaultValue: '',
+      },
+      {
+        name: 'term',
+        label: 'Periode',
+        options: termFilterOptions,
         defaultValue: '',
       },
     ],
-    [subjectOptions]
+    [classFilterOptions, subjectFilterOptions, termFilterOptions]
   );
 
   useEffect(() => {
@@ -65,9 +84,9 @@ export function GradesPage() {
           : '/api/v1/teacher/subjects';
 
         const [studentsRes, classesRes, subjectsRes] = await Promise.all([
-          apiClient.get(studentsEndpoint, { params: { role: 'student', per_page: 100 } }),
-          apiClient.get(classesEndpoint, { params: { per_page: 100 } }),
-          apiClient.get(subjectsEndpoint, { params: { per_page: 100 } }),
+          apiClient.get(studentsEndpoint, { params: { role: 'student', per_page: 500 } }),
+          apiClient.get(classesEndpoint, { params: { per_page: 500 } }),
+          apiClient.get(subjectsEndpoint, { params: { per_page: 500 } }),
         ]);
 
         const students = parseListResponse(studentsRes.data?.data || studentsRes.data).items;
@@ -91,7 +110,7 @@ export function GradesPage() {
 
         if (role === ROLES.ADMIN) {
           const teachersRes = await apiClient.get('/api/v1/admin/users', {
-            params: { role: 'teacher', per_page: 100 },
+            params: { role: 'teacher', per_page: 500 },
           });
           const teachers = parseListResponse(teachersRes.data?.data || teachersRes.data).items;
 
@@ -116,22 +135,171 @@ export function GradesPage() {
     loadFormOptions();
   }, [canMutate, role, user?.id, user?.name]);
 
-  const handleListLoaded = useCallback((listPayload) => {
-    const subjects = Array.isArray(listPayload?.subjects) ? listPayload.subjects : [];
-    const nextOptions = [
+  useEffect(() => {
+    const nextSubjectOptions = [
       { value: '', label: 'Toutes les matieres' },
-      ...subjects.map((subjectName) => ({
-        value: subjectName,
-        label: subjectName,
+      ...subjectFieldOptions
+        .filter((option) => option.value)
+        .map((option) => ({ value: option.value, label: option.label })),
+    ];
+
+    const nextClassOptions = [
+      { value: '', label: 'Toutes les classes' },
+      ...classFieldOptions
+        .filter((option) => option.value)
+        .map((option) => ({ value: option.value, label: option.label })),
+    ];
+
+    setSubjectFilterOptions((currentOptions) => {
+      const currentSignature = JSON.stringify(currentOptions);
+      const nextSignature = JSON.stringify(nextSubjectOptions);
+      return currentSignature === nextSignature ? currentOptions : nextSubjectOptions;
+    });
+
+    setClassFilterOptions((currentOptions) => {
+      const currentSignature = JSON.stringify(currentOptions);
+      const nextSignature = JSON.stringify(nextClassOptions);
+      return currentSignature === nextSignature ? currentOptions : nextClassOptions;
+    });
+  }, [classFieldOptions, subjectFieldOptions]);
+
+  const handleListLoaded = useCallback((listPayload) => {
+    const items = parseListResponse(listPayload).items;
+    const subjectMap = new Map();
+    const classMap = new Map();
+    const termMap = new Map();
+
+    items.forEach((item) => {
+      const subjectId = String(item.subject_id || item.subject?.id || '').trim();
+      const subjectLabel = String(item.subject?.name || item.subject_name || '').trim();
+      if (subjectId) {
+        subjectMap.set(subjectId, subjectLabel || `Matiere ${subjectId}`);
+      } else if (subjectLabel) {
+        subjectMap.set(subjectLabel, subjectLabel);
+      }
+
+      const classId = String(item.class_id || item.class?.id || '').trim();
+      const classLabel = String(item.class?.name || item.class_name || '').trim();
+      if (classId) {
+        classMap.set(classId, classLabel || `Classe ${classId}`);
+      } else if (classLabel) {
+        classMap.set(classLabel, classLabel);
+      }
+
+      const termValue = String(item.term || '').trim();
+      if (termValue) {
+        termMap.set(termValue, termValue);
+      }
+    });
+
+    const subjectsFromPayload = Array.isArray(listPayload?.subjects) ? listPayload.subjects : [];
+    subjectsFromPayload.forEach((subjectName) => {
+      const normalized = String(subjectName || '').trim();
+      if (normalized) {
+        subjectMap.set(normalized, normalized);
+      }
+    });
+
+    if (subjectMap.size === 0 && classMap.size === 0 && termMap.size === 0) {
+      return;
+    }
+
+    const nextSubjectOptions = [
+      { value: '', label: 'Toutes les matieres' },
+      ...Array.from(subjectMap.entries()).map(([value, label]) => ({
+        value,
+        label,
       })),
     ];
 
-    setSubjectOptions((currentOptions) => {
+    const nextClassOptions = [
+      { value: '', label: 'Toutes les classes' },
+      ...Array.from(classMap.entries()).map(([value, label]) => ({
+        value,
+        label,
+      })),
+    ];
+
+    const nextTermOptions = [
+      { value: '', label: 'Toutes les periodes' },
+      ...Array.from(termMap.entries()).map(([value, label]) => ({
+        value,
+        label,
+      })),
+    ];
+
+    setSubjectFilterOptions((currentOptions) => {
+      if (currentOptions.length > 1) {
+        return currentOptions;
+      }
+
       const currentSignature = JSON.stringify(currentOptions);
-      const nextSignature = JSON.stringify(nextOptions);
-      return currentSignature === nextSignature ? currentOptions : nextOptions;
+      const nextSignature = JSON.stringify(nextSubjectOptions);
+      return currentSignature === nextSignature ? currentOptions : nextSubjectOptions;
+    });
+
+    setClassFilterOptions((currentOptions) => {
+      if (currentOptions.length > 1) {
+        return currentOptions;
+      }
+
+      const currentSignature = JSON.stringify(currentOptions);
+      const nextSignature = JSON.stringify(nextClassOptions);
+      return currentSignature === nextSignature ? currentOptions : nextClassOptions;
+    });
+
+    setTermFilterOptions((currentOptions) => {
+      if (currentOptions.length > 1) {
+        return currentOptions;
+      }
+
+      const currentSignature = JSON.stringify(currentOptions);
+      const nextSignature = JSON.stringify(nextTermOptions);
+      return currentSignature === nextSignature ? currentOptions : nextTermOptions;
     });
   }, []);
+
+  const applyClientFilters = useCallback((loadedItems, activeFilters) => loadedItems.filter((item) => {
+    if (activeFilters.subject) {
+      const selectedSubject = String(activeFilters.subject).trim().toLowerCase();
+      const subjectId = String(item.subject_id || item.subject?.id || '').trim();
+      const subjectName = String(item.subject?.name || item.subject_name || '').trim().toLowerCase();
+
+      if (subjectId !== activeFilters.subject && subjectName !== selectedSubject) {
+        return false;
+      }
+    }
+
+    if (activeFilters.class) {
+      const selectedClass = String(activeFilters.class).trim().toLowerCase();
+      const classId = String(item.class_id || item.class?.id || '').trim();
+      const className = String(item.class?.name || item.class_name || '').trim().toLowerCase();
+
+      if (classId !== activeFilters.class && className !== selectedClass) {
+        return false;
+      }
+    }
+
+    if (activeFilters.term) {
+      const selectedTerm = String(activeFilters.term).trim().toLowerCase();
+      const term = String(item.term || '').trim().toLowerCase();
+
+      if (term !== selectedTerm) {
+        return false;
+      }
+    }
+
+    return true;
+  }), []);
+
+  const buildGradesListParams = useCallback(
+    ({ search, page }) => ({
+      search,
+      page,
+      per_page: 500,
+    }),
+    []
+  );
 
   return (
     <CrudPage
@@ -143,34 +311,42 @@ export function GradesPage() {
       canEdit={canMutate}
       canDelete={canMutate}
       filters={gradeFilters}
+      buildListParams={buildGradesListParams}
+      includeFiltersInRequest={false}
       onListLoaded={handleListLoaded}
+      applyClientFilters={applyClientFilters}
       columns={[
         {
           key: 'student_name',
-          label: 'Eleve',
+          label: FR.tables.grades.student,
           render: (item) => item.student?.name || item.student_name || item.student_id || '-',
         },
         {
           key: 'subject_name',
-          label: 'Matiere',
+          label: FR.tables.grades.subject,
           render: (item) => item.subject?.name || item.subject_name || item.subject_id || '-',
         },
         {
           key: 'class_name',
-          label: 'Classe',
+          label: FR.tables.grades.class,
           render: (item) => item.class?.name || item.class_name || item.class_id || '-',
         },
         {
           key: 'value',
-          label: 'Note',
+          label: FR.tables.grades.grade,
           render: (item) => `${item.value ?? '-'} / 20`,
         },
         {
           key: 'type',
-          label: 'Type',
+          label: FR.tables.grades.type,
           render: (item) => <Badge tone="brand">{item.type || '-'}</Badge>,
         },
-        { key: 'grade_date', label: 'Date', format: 'date' },
+        {
+          key: 'term',
+          label: FR.tables.grades.term || 'Periode',
+          render: (item) => item.term || '-',
+        },
+        { key: 'grade_date', label: FR.tables.grades.date, format: 'date' },
       ]}
       fields={[
         { name: 'student_id', label: 'Eleve', type: 'select', required: true, options: studentFieldOptions },
