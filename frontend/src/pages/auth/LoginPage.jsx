@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import FR from '../../i18n/fr';
 
 export function LoginPage() {
   const { login, isAuthenticated, user } = useAuth();
@@ -38,7 +39,7 @@ export function LoginPage() {
         ? Object.values(validationErrors).flat()[0]
         : '';
 
-      setError(backendMessage || firstValidationError || 'Echec de connexion.');
+      setError(backendMessage || firstValidationError || FR.login.errors.failed);
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +115,7 @@ export function LoginPage() {
             Se souvenir de moi
           </label>
 
-          <Button type="submit" className="w-full" isLoading={isSubmitting}>
+          <Button type="submit" className="w-full" isLoading={isSubmitting} variant="primary">
             Se connecter
           </Button>
         </form>
