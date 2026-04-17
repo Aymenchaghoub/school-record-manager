@@ -4,6 +4,7 @@ import { authService } from '../../services/authService';
 import { Alert } from '../../components/ui/Alert';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import FR from '../../i18n/fr';
 
 function splitDisplayName(user) {
   if (user?.first_name || user?.last_name) {
@@ -37,15 +38,69 @@ export default function ProfilePage() {
   });
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   const handleChange = (event) => {
     const { name: field, value } = event.target;
     setForm((previous) => ({ ...previous, [field]: value }));
+
+    setFormErrors((previous) => {
+      if (!previous[field]) {
+        return previous;
+      }
+
+      const nextErrors = { ...previous };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!String(form.first_name || '').trim()) {
+      nextErrors.first_name = FR.profile.errors.firstNameRequired;
+    }
+
+    if (!String(form.last_name || '').trim()) {
+      nextErrors.last_name = FR.profile.errors.lastNameRequired;
+    }
+
+    const emailValue = String(form.email || '').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailValue) {
+      nextErrors.email = FR.profile.errors.emailRequired;
+    } else if (!emailRegex.test(emailValue)) {
+      nextErrors.email = FR.common.errors.emailInvalid;
+    }
+
+    if (form.password) {
+      if (String(form.password).length < 8) {
+        nextErrors.password = FR.profile.errors.passwordMin;
+      }
+
+      if (!form.password_confirmation) {
+        nextErrors.password_confirmation = FR.profile.errors.passwordConfirmRequired;
+      } else if (form.password_confirmation !== form.password) {
+        nextErrors.password_confirmation = FR.profile.errors.passwordConfirmMismatch;
+      }
+    } else if (form.password_confirmation) {
+      nextErrors.password = FR.profile.errors.passwordMissing;
+    }
+
+    return nextErrors;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      setError(FR.common.errors.fixFields);
+      return;
+    }
 
     try {
       const payload = await authService.updateProfile(form);
@@ -63,17 +118,18 @@ export default function ProfilePage() {
       }
 
       await refreshUser();
+      setFormErrors({});
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err?.message ?? 'Une erreur est survenue');
+      setError(err?.message ?? FR.profile.errors.updateFailed);
     }
   };
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold">Mon profil</h1>
-      {success ? <Alert variant="success">Profil mis a jour avec succes.</Alert> : null}
+      {success ? <Alert variant="success">{FR.profile.success}</Alert> : null}
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,6 +138,9 @@ export default function ProfilePage() {
           name="first_name"
           value={form.first_name}
           onChange={handleChange}
+          placeholder="ex: Sarah"
+          helperText="Utilise pour l affichage de votre profil."
+          error={formErrors.first_name}
           required
         />
 
@@ -90,6 +149,9 @@ export default function ProfilePage() {
           name="last_name"
           value={form.last_name}
           onChange={handleChange}
+          placeholder="ex: Benali"
+          helperText="Utilise pour l affichage officiel dans l application."
+          error={formErrors.last_name}
           required
         />
 
@@ -99,6 +161,9 @@ export default function ProfilePage() {
           type="email"
           value={form.email}
           onChange={handleChange}
+          placeholder="ex: prenom.nom@ecole.fr"
+          helperText="Cette adresse servira a la connexion et aux notifications."
+          error={formErrors.email}
           required
         />
 
@@ -108,6 +173,9 @@ export default function ProfilePage() {
           type="password"
           value={form.password}
           onChange={handleChange}
+          placeholder="Minimum 8 caracteres"
+          helperText="Utilisez au moins 8 caracteres avec lettres et chiffres pour plus de securite."
+          error={formErrors.password}
         />
 
         <Input
@@ -116,6 +184,9 @@ export default function ProfilePage() {
           type="password"
           value={form.password_confirmation}
           onChange={handleChange}
+          placeholder="Retapez le nouveau mot de passe"
+          helperText="Doit correspondre exactement au mot de passe saisi ci-dessus."
+          error={formErrors.password_confirmation}
         />
 
         <Button type="submit" variant="primary">Enregistrer</Button>
