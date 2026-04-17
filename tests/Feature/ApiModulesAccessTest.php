@@ -55,8 +55,16 @@ class ApiModulesAccessTest extends TestCase
                 ->getJson('/api/v1/student/grades')
             ->assertOk();
 
+        $this->actingAs($student)
+                ->getJson('/api/v1/student/report-cards')
+            ->assertOk();
+
         $this->actingAs($parent)
                 ->getJson('/api/v1/parent/children/grades')
+            ->assertOk();
+
+        $this->actingAs($parent)
+                ->getJson('/api/v1/parent/report-cards')
             ->assertOk();
     }
 }
