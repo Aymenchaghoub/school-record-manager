@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
+import FR from '../../i18n/fr';
 import apiClient from '../../services/apiClient';
 import { createSubjectsService } from '../../services/subjectsService';
 import { ROLES } from '../../utils/constants';
@@ -33,7 +34,7 @@ export function SubjectsPage() {
     const loadTeachers = async () => {
       try {
         const response = await apiClient.get('/api/v1/admin/users', {
-          params: { role: 'teacher', per_page: 100 },
+          params: { role: 'teacher', per_page: 500 },
         });
         const teachers = parseListResponse(response.data?.data || response.data).items;
 
@@ -59,22 +60,22 @@ export function SubjectsPage() {
       canEdit={isAdmin}
       canDelete={isAdmin}
       columns={[
-        { key: 'name', label: 'Nom' },
-        { key: 'code', label: 'Code' },
+        { key: 'name', label: FR.tables.subjects.name },
+        { key: 'code', label: FR.tables.subjects.code },
         {
           key: 'type',
-          label: 'Type',
+          label: FR.tables.subjects.type,
           render: (item) => <Badge tone="brand">{item.type || '-'}</Badge>,
         },
-        { key: 'credits', label: 'Credits' },
+        { key: 'credits', label: FR.tables.subjects.credits },
         {
           key: 'teacher',
-          label: 'Enseignant',
+          label: FR.tables.subjects.teacher,
           render: (item) => item.teacher?.name || item.teacher_name || '-',
         },
         {
           key: 'is_active',
-          label: 'Etat',
+          label: FR.tables.subjects.status,
           render: (item) => (
             <Badge tone={item.is_active ? 'success' : 'danger'}>
               {item.is_active ? 'Actif' : 'Inactif'}
