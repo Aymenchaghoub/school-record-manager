@@ -17,6 +17,7 @@ class ClassApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $search = trim((string) $request->input('search', ''));
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 500);
 
         $query = ClassModel::query()
             ->with(['teacher:id,name,email'])
@@ -37,7 +38,7 @@ class ClassApiController extends Controller
             $query->where('name', 'like', "%{$search}%");
         }
 
-        return $this->paginated($query->paginate(10)->withQueryString(), 'Classes fetched successfully.');
+        return $this->paginated($query->paginate($perPage)->withQueryString(), 'Classes fetched successfully.');
     }
 
     public function store(StoreClassRequest $request): JsonResponse
