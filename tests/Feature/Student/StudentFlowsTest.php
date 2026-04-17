@@ -27,6 +27,19 @@ class StudentFlowsTest extends TestCase
             ->assertOk();
     }
 
+    public function test_student_absence_list_honors_per_page_parameter(): void
+    {
+        $student = User::factory()->student()->create();
+        Absence::factory()->count(7)->create(['student_id' => $student->id]);
+
+        $response = $this->actingAs($student)
+            ->getJson('/api/v1/student/absences?per_page=3')
+            ->assertOk();
+
+        $this->assertSame(3, (int) $response->json('data.per_page'));
+        $this->assertCount(3, $response->json('data.items'));
+    }
+
     public function test_student_cannot_access_teacher_routes(): void
     {
         $student = User::factory()->student()->create();
