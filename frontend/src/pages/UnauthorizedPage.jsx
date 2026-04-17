@@ -14,7 +14,7 @@ export function UnauthorizedPage() {
           to="/dashboard"
           className="mt-6 inline-flex"
         >
-          <Button>Retour au tableau de bord</Button>
+          <Button variant="primary">Retour au tableau de bord</Button>
         </Link>
       </div>
     </div>
