@@ -26,6 +26,7 @@ class GradeApiController extends Controller
     {
         $search = trim((string) $request->input('search', ''));
         $subject = trim((string) $request->input('subject', ''));
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 500);
 
         $query = Grade::query()
             ->with([
@@ -72,7 +73,7 @@ class GradeApiController extends Controller
             ->values();
 
         return $this->paginated(
-            $query->paginate(10)->withQueryString(),
+            $query->paginate($perPage)->withQueryString(),
             'Grades fetched successfully.',
             ['subjects' => $subjects]
         );
