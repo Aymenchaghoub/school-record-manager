@@ -17,6 +17,19 @@ class UserManagementTest extends TestCase
             ->assertJsonStructure(['data']);
     }
 
+    public function test_admin_user_list_honors_per_page_parameter(): void
+    {
+        $admin = User::factory()->admin()->create();
+        User::factory()->count(6)->student()->create();
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/v1/admin/users?per_page=3')
+            ->assertOk();
+
+        $this->assertSame(3, (int) $response->json('data.per_page'));
+        $this->assertCount(3, $response->json('data.items'));
+    }
+
     public function test_admin_can_create_user(): void
     {
         $admin = User::factory()->admin()->create();
