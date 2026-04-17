@@ -71,6 +71,16 @@ a {
   text-decoration: none;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .theme-muted {
   color: var(--color-muted);
 }
@@ -121,7 +131,7 @@ a {
 
 .sidebar-link-active {
   border-left-color: var(--color-primary);
-  background: #f5f3ff;
+  background: #F5F3FF;
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -222,8 +232,10 @@ a {
 }
 
 .role-badge-admin {
-  background: #ede9fe;
-  color: #7c3aed;
+  background: #EDE9FE;
+  color: #7C3AED;
+  font-size: 11px;
+  text-transform: uppercase;
 }
 
 .role-badge-teacher {
@@ -278,7 +290,7 @@ a {
 
 .ui-btn-primary {
   border: 1px solid transparent;
-  background: var(--color-primary-gradient);
+  background: linear-gradient(135deg, #E040A0, #A855F7);
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
 }
@@ -382,6 +394,18 @@ a {
   vertical-align: top;
 }
 
+.crud-table-row-header {
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.78rem 0.8rem;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  vertical-align: top;
+}
+
 .crud-table tbody tr {
   transition: background-color 120ms ease;
 }
@@ -439,6 +463,11 @@ a {
 
 .ds-field-error {
   color: var(--color-danger);
+  font-size: 11px;
+}
+
+.ds-field-helper {
+  color: var(--color-muted);
   font-size: 11px;
 }
 
