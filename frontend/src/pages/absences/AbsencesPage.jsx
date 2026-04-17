@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../hooks/useAuth';
+import FR from '../../i18n/fr';
 import apiClient from '../../services/apiClient';
 import { createAbsencesService } from '../../services/absencesService';
 import { ROLES } from '../../utils/constants';
@@ -14,21 +15,32 @@ const absenceTypeOptions = [
   { value: 'early_departure', label: 'Depart anticipe' },
 ];
 
-const monthFilterOptions = [
-  { value: '', label: 'Tous les mois' },
-  { value: '1', label: 'Jan' },
-  { value: '2', label: 'Fev' },
-  { value: '3', label: 'Mar' },
-  { value: '4', label: 'Avr' },
-  { value: '5', label: 'Mai' },
-  { value: '6', label: 'Juin' },
-  { value: '7', label: 'Juil' },
-  { value: '8', label: 'Aout' },
-  { value: '9', label: 'Sep' },
-  { value: '10', label: 'Oct' },
-  { value: '11', label: 'Nov' },
-  { value: '12', label: 'Dec' },
+const absenceStatusFilterOptions = [
+  { value: '', label: 'Tous les statuts' },
+  { value: 'justified', label: 'Justifiee' },
+  { value: 'pending_reason', label: 'En attente de motif' },
+  { value: 'unjustified', label: 'Non justifiee' },
 ];
+
+const absencePeriodFilterOptions = [
+  { value: '', label: 'Toutes les periodes' },
+  { value: 'current_month', label: 'Ce mois-ci' },
+  { value: 'current_quarter', label: 'Ce trimestre' },
+  { value: 'current_year', label: 'Cette annee' },
+];
+
+function resolveAbsenceStatusKey(item) {
+  if (item?.is_justified) {
+    return 'justified';
+  }
+
+  const hasReason = Boolean(String(item?.reason || item?.justification || '').trim());
+  if (!hasReason) {
+    return 'pending_reason';
+  }
+
+  return 'unjustified';
+}
 
 function resolveAbsenceStatus(item) {
   if (item?.is_justified) {
@@ -46,11 +58,11 @@ function resolveAbsenceStatus(item) {
 export function AbsencesPage() {
   const { user } = useAuth();
   const role = user?.role;
-  const currentYear = new Date().getFullYear();
   const [studentFieldOptions, setStudentFieldOptions] = useState([{ value: '', label: 'Selectionner un eleve' }]);
   const [classFieldOptions, setClassFieldOptions] = useState([{ value: '', label: 'Selectionner une classe' }]);
   const [subjectFieldOptions, setSubjectFieldOptions] = useState([{ value: '', label: 'Selectionner une matiere' }]);
   const [teacherFieldOptions, setTeacherFieldOptions] = useState([{ value: '', label: 'Selectionner un enseignant' }]);
+  const [classFilterOptions, setClassFilterOptions] = useState([{ value: '', label: 'Toutes les classes' }]);
 
   const service = useMemo(
     () => createAbsencesService(role || ROLES.ADMIN),
@@ -77,9 +89,9 @@ export function AbsencesPage() {
           : '/api/v1/teacher/subjects';
 
         const [studentsRes, classesRes, subjectsRes] = await Promise.all([
-          apiClient.get(usersEndpoint, { params: { role: 'student', per_page: 100 } }),
-          apiClient.get(classesEndpoint, { params: { per_page: 100 } }),
-          apiClient.get(subjectsEndpoint, { params: { per_page: 100 } }),
+          apiClient.get(usersEndpoint, { params: { role: 'student', per_page: 500 } }),
+          apiClient.get(classesEndpoint, { params: { per_page: 500 } }),
+          apiClient.get(subjectsEndpoint, { params: { per_page: 500 } }),
         ]);
 
         const students = parseListResponse(studentsRes.data?.data || studentsRes.data).items;
@@ -103,7 +115,7 @@ export function AbsencesPage() {
 
         if (role === ROLES.ADMIN) {
           const teachersRes = await apiClient.get('/api/v1/admin/users', {
-            params: { role: 'teacher', per_page: 100 },
+            params: { role: 'teacher', per_page: 500 },
           });
           const teachers = parseListResponse(teachersRes.data?.data || teachersRes.data).items;
 
@@ -128,27 +140,135 @@ export function AbsencesPage() {
     loadFormOptions();
   }, [canMutate, role, user?.id, user?.name]);
 
+  useEffect(() => {
+    const nextOptions = [
+      { value: '', label: 'Toutes les classes' },
+      ...classFieldOptions
+        .filter((option) => option.value)
+        .map((option) => ({ value: option.value, label: option.label })),
+    ];
+
+    setClassFilterOptions((currentOptions) => {
+      const currentSignature = JSON.stringify(currentOptions);
+      const nextSignature = JSON.stringify(nextOptions);
+      return currentSignature === nextSignature ? currentOptions : nextOptions;
+    });
+  }, [classFieldOptions]);
+
   const absenceFilters = useMemo(
     () => [
       {
-        name: 'month',
-        label: 'Mois',
-        options: monthFilterOptions,
+        name: 'class_id',
+        label: 'Classe',
+        options: classFilterOptions,
+        defaultValue: '',
+      },
+      {
+        name: 'status',
+        label: 'Statut',
+        options: absenceStatusFilterOptions,
+        defaultValue: '',
+      },
+      {
+        name: 'period',
+        label: 'Periode',
+        options: absencePeriodFilterOptions,
         defaultValue: '',
       },
     ],
-    []
+    [classFilterOptions]
   );
 
   const buildAbsenceListParams = useCallback(
-    ({ search, page, filters }) => ({
+    ({ search, page }) => ({
       search,
       page,
-      month: filters.month,
-      year: filters.month ? currentYear : undefined,
+      per_page: 500,
     }),
-    [currentYear]
+    []
   );
+
+  const handleListLoaded = useCallback((listPayload) => {
+    const parsedItems = parseListResponse(listPayload).items;
+    const classMap = new Map();
+
+    parsedItems.forEach((item) => {
+      const classId = String(item.class_id || item.class?.id || '').trim();
+      if (!classId) {
+        return;
+      }
+
+      const classLabel = item.class?.name || item.class_name || `Classe ${classId}`;
+      classMap.set(classId, classLabel);
+    });
+
+    if (classMap.size === 0) {
+      return;
+    }
+
+    const nextOptions = [
+      { value: '', label: 'Toutes les classes' },
+      ...Array.from(classMap.entries()).map(([value, label]) => ({ value, label })),
+    ];
+
+    setClassFilterOptions((currentOptions) => {
+      if (currentOptions.length > 1) {
+        return currentOptions;
+      }
+
+      const currentSignature = JSON.stringify(currentOptions);
+      const nextSignature = JSON.stringify(nextOptions);
+      return currentSignature === nextSignature ? currentOptions : nextOptions;
+    });
+  }, []);
+
+  const applyClientFilters = useCallback((loadedItems, activeFilters) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const currentQuarter = Math.floor(currentMonth / 3);
+
+    return loadedItems.filter((item) => {
+      if (activeFilters.class_id) {
+        const itemClassId = String(item.class_id || item.class?.id || '');
+        if (itemClassId !== activeFilters.class_id) {
+          return false;
+        }
+      }
+
+      if (activeFilters.status) {
+        const itemStatus = resolveAbsenceStatusKey(item);
+        if (itemStatus !== activeFilters.status) {
+          return false;
+        }
+      }
+
+      if (activeFilters.period) {
+        const absenceDate = new Date(item.absence_date || item.date || '');
+        if (Number.isNaN(absenceDate.getTime())) {
+          return false;
+        }
+
+        const absenceYear = absenceDate.getFullYear();
+        const absenceMonth = absenceDate.getMonth();
+        const absenceQuarter = Math.floor(absenceMonth / 3);
+
+        if (activeFilters.period === 'current_month' && (absenceYear !== currentYear || absenceMonth !== currentMonth)) {
+          return false;
+        }
+
+        if (activeFilters.period === 'current_quarter' && (absenceYear !== currentYear || absenceQuarter !== currentQuarter)) {
+          return false;
+        }
+
+        if (activeFilters.period === 'current_year' && absenceYear !== currentYear) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, []);
 
   return (
     <CrudPage
@@ -161,33 +281,36 @@ export function AbsencesPage() {
       canDelete={canMutate}
       filters={absenceFilters}
       buildListParams={buildAbsenceListParams}
+      includeFiltersInRequest={false}
+      onListLoaded={handleListLoaded}
+      applyClientFilters={applyClientFilters}
       columns={[
         {
           key: 'student_name',
-          label: 'Eleve',
+          label: FR.tables.absences.student,
           render: (item) => item.student?.name || item.student_name || item.student_id || '-',
         },
         {
           key: 'class_name',
-          label: 'Classe',
+          label: FR.tables.absences.class,
           render: (item) => item.class?.name || item.class_name || item.class_id || '-',
         },
         {
           key: 'type',
-          label: 'Type',
+          label: FR.tables.absences.type,
           render: (item) => <Badge tone="brand">{item.type || '-'}</Badge>,
         },
-        { key: 'absence_date', label: 'Date', format: 'date' },
+        { key: 'absence_date', label: FR.tables.absences.date, format: 'date' },
         {
           key: 'is_justified',
-          label: 'Justifiee',
+          label: FR.tables.absences.justified,
           render: (item) => {
             const status = resolveAbsenceStatus(item);
 
             return <Badge tone={status.tone}>{status.label}</Badge>;
           },
         },
-        { key: 'reason', label: 'Motif' },
+        { key: 'reason', label: FR.tables.absences.reason },
       ]}
       fields={[
         { name: 'student_id', label: 'Eleve', type: 'select', required: true, options: studentFieldOptions },
