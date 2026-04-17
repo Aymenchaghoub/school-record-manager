@@ -4,6 +4,7 @@ import { Alert } from '../../components/ui/Alert';
 import { Spinner } from '../../components/ui/Spinner';
 import { PageHeader } from '../../components/common/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
+import FR from '../../i18n/fr';
 import { dashboardService } from '../../services/dashboardService';
 import { ROLES } from '../../utils/constants';
 import { AdminDashboard } from './AdminDashboard';
@@ -64,7 +65,7 @@ export function DashboardPage() {
         if (isMounted) {
           setError(
             err?.message ||
-              'Impossible de charger les donnees du tableau de bord.'
+              FR.common.errors.load
           );
         }
       } finally {
