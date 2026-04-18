@@ -3,11 +3,10 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 
-const DEFAULT_API_BASE_URL =
-  import.meta.env.DEV ? '' : 'http://127.0.0.1:8000';
+const DEFAULT_API_BASE_URL = 'http://localhost:8000';
 const SANCTUM_CSRF_PATH = '/sanctum/csrf-cookie';
 
-const configuredBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim();
+const configuredBaseUrl = String(import.meta.env.VITE_API_URL || '').trim();
 const normalizedBaseUrl = configuredBaseUrl || DEFAULT_API_BASE_URL;
 
 const apiClient = axios.create({
