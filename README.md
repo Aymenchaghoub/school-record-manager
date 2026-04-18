@@ -42,7 +42,8 @@ php artisan migrate --force
 ### Frontend React (Vercel)
 1. Create a Vercel project with `frontend` as Root Directory.
 2. `frontend/vercel.json` handles SPA rewrites to `index.html`.
-3. Set frontend environment variables in Vercel:
+3. If your Vercel project is set to repository root, use root `vercel.json` (already included) to build from `frontend` and publish `frontend/dist`.
+4. Set frontend environment variables in Vercel:
 
 ```env
 VITE_API_BASE_URL=https://your-railway-backend-domain
