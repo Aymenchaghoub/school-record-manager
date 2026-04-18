@@ -32,7 +32,7 @@ cd frontend && npm run dev
 2. Railway uses `railway.json` and starts Laravel with the provided start command.
 3. Configure backend variables using `.env.production.example`.
 4. Set `APP_URL` to your Railway public backend URL.
-5. Set `FRONTEND_URLS` and `SANCTUM_STATEFUL_DOMAINS` with your Vercel frontend domain and backend domain.
+5. Set `FRONTEND_URL` and `SANCTUM_STATEFUL_DOMAINS` with your Vercel frontend domain and backend domain.
 6. Run migrations once in Railway shell:
 
 ```bash
@@ -55,7 +55,7 @@ VITE_REVERB_SCHEME=https
 ```
 
 ### Final Checks
-1. Ensure `FRONTEND_URLS` includes your Vercel URL.
+1. Ensure `FRONTEND_URL` matches your Vercel URL.
 2. Ensure `SANCTUM_STATEFUL_DOMAINS` includes both frontend and backend hosts.
 3. Validate login, CSRF cookie flow, and realtime features after deployment.
 
