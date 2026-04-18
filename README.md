@@ -25,6 +25,39 @@ php artisan serve
 cd frontend && npm run dev
 ```
 
+## Déploiement
+
+### Backend Laravel (Railway)
+1. Create a Railway project from this repository root.
+2. Railway uses `railway.json` and starts Laravel with the provided start command.
+3. Configure backend variables using `.env.production.example`.
+4. Set `APP_URL` to your Railway public backend URL.
+5. Set `FRONTEND_URLS` and `SANCTUM_STATEFUL_DOMAINS` with your Vercel frontend domain and backend domain.
+6. Run migrations once in Railway shell:
+
+```bash
+php artisan migrate --force
+```
+
+### Frontend React (Vercel)
+1. Create a Vercel project with `frontend` as Root Directory.
+2. `frontend/vercel.json` handles SPA rewrites to `index.html`.
+3. Set frontend environment variables in Vercel:
+
+```env
+VITE_API_BASE_URL=https://your-railway-backend-domain
+VITE_APP_ENV=production
+VITE_REVERB_APP_KEY=your-reverb-app-key
+VITE_REVERB_HOST=your-railway-backend-domain-without-https
+VITE_REVERB_PORT=443
+VITE_REVERB_SCHEME=https
+```
+
+### Final Checks
+1. Ensure `FRONTEND_URLS` includes your Vercel URL.
+2. Ensure `SANCTUM_STATEFUL_DOMAINS` includes both frontend and backend hosts.
+3. Validate login, CSRF cookie flow, and realtime features after deployment.
+
 ## Tests
 ```bash
 php artisan test
