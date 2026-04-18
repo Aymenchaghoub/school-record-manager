@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import useNotifications from '../hooks/useNotifications';
 import { useTheme } from '../context/ThemeContext';
 import FR from '../i18n/fr';
 
@@ -55,15 +57,34 @@ function getInitials(user) {
 export function TopBar({ user, onToggleSidebar }) {
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
+  const { notifications, unreadCount, markAllRead } = useNotifications();
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const notifContainerRef = useRef(null);
 
   const currentSegment = location.pathname.split('/').filter(Boolean).slice(-1)[0] || 'dashboard';
   const currentLabel = routeLabelMap[currentSegment] || 'Application';
 
   const role = user?.role || 'student';
-  const notificationCount = Number(user?.notifications_count || user?.unread_notifications || 0);
   const roleBadgeClass = roleBadgeClassMap[role] || 'role-badge-student';
   const roleLabel = roleLabelMap[role] || String(role || '-').toUpperCase();
   const initials = getInitials(user);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (!notifContainerRef.current) {
+        return;
+      }
+
+      if (!notifContainerRef.current.contains(event.target)) {
+        setShowNotifDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, []);
 
   return (
     <header className="app-topbar sticky top-0 z-30 border-b px-4 py-3 backdrop-blur lg:px-8">
@@ -157,18 +178,86 @@ export function TopBar({ user, onToggleSidebar }) {
             )}
           </button>
 
-          <button
-            type="button"
-            className="topbar-icon-btn"
-            aria-label={FR.topBar.notificationsLabel}
-            title="Notifications"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12 4a5 5 0 0 0-5 5v2.6l-1.5 2.7a1 1 0 0 0 .87 1.5h11.26a1 1 0 0 0 .87-1.5L17 11.6V9a5 5 0 0 0-5-5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {notificationCount > 0 ? <span className="topbar-icon-badge">{notificationCount}</span> : null}
-          </button>
+          <div ref={notifContainerRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className="topbar-icon-btn"
+              aria-label={FR.topBar.notificationsLabel}
+              title="Notifications"
+              onClick={() => setShowNotifDropdown((previous) => !previous)}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12 4a5 5 0 0 0-5 5v2.6l-1.5 2.7a1 1 0 0 0 .87 1.5h11.26a1 1 0 0 0 .87-1.5L17 11.6V9a5 5 0 0 0-5-5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {unreadCount > 0 ? <span className="topbar-icon-badge">{unreadCount}</span> : null}
+            </button>
+
+            {showNotifDropdown ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '48px',
+                  right: 0,
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '12px',
+                  width: '320px',
+                  boxShadow: 'var(--shadow-card)',
+                  zIndex: 100,
+                }}
+              >
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--color-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, fontSize: '14px' }}>Notifications</span>
+                  {unreadCount > 0 ? (
+                    <button
+                      onClick={markAllRead}
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--color-primary)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Tout marquer comme lu
+                    </button>
+                  ) : null}
+                </div>
+
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '13px' }}>
+                    Aucune notification
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid var(--color-border)',
+                        background: notification.read ? 'transparent' : '#F5F3FF',
+                        fontSize: '13px',
+                      }}
+                    >
+                      <p style={{ fontWeight: 500, margin: '0 0 4px' }}>{notification.message}</p>
+                      <p style={{ color: 'var(--color-muted)', margin: 0 }}>
+                        {notification.subject || 'Information'} - {notification.date || ''}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
 
           <div className="flex items-center gap-2 rounded-full px-1 py-1" style={{ background: 'var(--color-surface)' }}>
             <Link to="/profile" className="flex items-center gap-2 pl-1" aria-label={FR.topBar.profileLabel}>
