@@ -1,111 +1,44 @@
-# SchoolSphere
+# School Record Manager / SchoolSphere
 
-SchoolSphere is a Laravel + React school management platform with role-based access (admin, teacher, student, parent), academic records, absences, events, and report cards.
-
-## SPA-only Architecture
-- Backend (Laravel) exposes versioned API endpoints under `api/v1/*` for authentication and business data.
-- Frontend (React + Vite in `frontend/`) is the single UI entry point and consumes only these APIs.
-- Web pages are routed in the SPA (`frontend/src/routes/AppRouter.jsx`), while Laravel handles data, auth, and authorization.
+School Record Manager (SchoolSphere) uses Laravel 11 for the backend and React as a SPA frontend.
+It supports multi-role usage with admin, teacher, student, and parent access.
+All core features are served through versioned API v1 endpoints consumed by the SPA.
 
 ## Prerequisites
-- PHP 8.2+
-- Composer 2+
+- PHP 8.2
 - Node.js 18+
-- MySQL 8+
+- Composer
+- MySQL
 
 ## Setup
-1. Clone repository
-```bash
-git clone <your-repo-url> school-record-manager
-cd school-record-manager
-```
-
-2. Install backend dependencies
 ```bash
 composer install
-```
-
-3. Install root frontend tooling (Laravel Vite bridge)
-```bash
-npm install
-```
-
-4. Install SPA frontend dependencies
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-5. Configure environment
-```bash
 cp .env.example .env
 php artisan key:generate
-```
-
-## Required Environment Variables (.env)
-Start from `.env.example` and make sure these values are set:
-
-```env
-APP_NAME=SchoolSphere
-APP_ENV=local
-APP_KEY=
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=school_record_manager
-DB_USERNAME=root
-DB_PASSWORD=
-
-SESSION_DRIVER=file
-SESSION_DOMAIN=localhost
-SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
-```
-
-## Database Initialization
-```bash
 php artisan migrate:fresh --seed
+cd frontend && npm install && npm run build
 ```
 
-## Run in Development
-Run backend API:
+## Development Run
 ```bash
 php artisan serve
-```
-
-Run SPA frontend (in a second terminal):
-```bash
-cd frontend
-npm run dev
-```
-
-## Build Frontend
-```bash
-cd frontend
-npm run build
-```
-
-## Run Tests
-Backend tests:
-```bash
-php artisan test
-```
-
-Frontend tests (if script exists):
-```bash
-cd frontend
-npm run test
-```
-
-## Useful Commands
-```bash
-php artisan migrate:fresh --seed
-php artisan test
 cd frontend && npm run dev
-cd frontend && npm run build
 ```
 
-## CI
-A dedicated frontend workflow is available in `.github/workflows/frontend.yml`.
+## Tests
+```bash
+php artisan test
+```
+
+## Demo Accounts
+The following accounts are created by the seeders. Default password is `password`.
+
+- Admin: admin@school.com
+- Teacher: teacher@school.com
+- Student: student@school.com
+- Parent: parent@school.com
+
+Additional seeded teachers and students are also generated (for example teacher1@school.com and studentXXX@school.com), all with password `password`.
+
+## Architecture
+This project follows a SPA-only architecture: React handles all user-facing navigation and screens in the frontend, while Laravel exposes business capabilities through API v1 routes (authentication, users, classes, subjects, grades, absences, events, and report cards). The SPA never relies on server-rendered pages for core workflows and communicates only with the API layer.
