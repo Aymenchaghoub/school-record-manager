@@ -46,7 +46,7 @@ php artisan migrate --force
 4. Set frontend environment variables in Vercel:
 
 ```env
-VITE_API_BASE_URL=https://your-railway-backend-domain
+VITE_API_URL=https://your-railway-backend-domain
 VITE_APP_ENV=production
 VITE_REVERB_APP_KEY=your-reverb-app-key
 VITE_REVERB_HOST=your-railway-backend-domain-without-https
