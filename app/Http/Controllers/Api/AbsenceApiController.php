@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\AbsenceCreated;
 use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Absences\StoreAbsenceRequest;
@@ -68,9 +69,12 @@ class AbsenceApiController extends Controller
         $payload = $this->normalizePayload($validated, $request->user(), false);
 
         $absence = Absence::create($payload);
+        $absence->load(['student:id,name,email', 'class:id,name,code', 'subject:id,name,code', 'recordedBy:id,name,email']);
+
+        event(new AbsenceCreated($absence));
 
         return $this->success(
-            $absence->load(['student:id,name,email', 'class:id,name,code', 'subject:id,name,code', 'recordedBy:id,name,email']),
+            $absence,
             'Absence created successfully.',
             201
         );
