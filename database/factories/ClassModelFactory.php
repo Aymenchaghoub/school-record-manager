@@ -26,7 +26,7 @@ class ClassModelFactory extends Factory
             'level' => $level,
             'section' => $section,
             'academic_year' => fake()->randomElement(['2023-2024', '2024-2025']),
-            'responsible_teacher_id' => User::factory()->teacher(),
+            'teacher_id' => User::factory()->teacher(),
             'capacity' => fake()->numberBetween(20, 35),
             'description' => fake()->sentence(),
             'is_active' => true,

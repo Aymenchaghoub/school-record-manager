@@ -140,8 +140,8 @@ class UserService
         return [
             'current_class' => $student->studentClass()?->name,
             'total_subjects' => $student->studentClass()?->subjects()->count() ?? 0,
-            'total_grades' => $student->grades()->count(),
-            'total_absences' => $student->absences()->count(),
+            'total_grades' => $student->studentGrades()->count(),
+            'total_absences' => $student->studentAbsences()->count(),
         ];
     }
     

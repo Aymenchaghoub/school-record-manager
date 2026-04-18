@@ -19,8 +19,8 @@ class GradeFactory extends Factory
      */
     public function definition(): array
     {
-        $maxValue = fake()->randomElement([10, 20, 50, 100]);
-        $value = fake()->numberBetween($maxValue * 0.4, $maxValue);
+        $maxValue = 20;
+        $value = fake()->numberBetween(8, $maxValue);
         
         return [
             'student_id' => User::factory()->student(),

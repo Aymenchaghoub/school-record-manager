@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
                     'level' => $level,
                     'section' => $section,
                     'academic_year' => '2024-2025',
-                    'responsible_teacher_id' => $teachers[array_rand($teachers)]->id,
+                    'teacher_id' => $teachers[array_rand($teachers)]->id,
                     'capacity' => 30,
                     'description' => "Class for $level Section $section",
                     'is_active' => true,
@@ -231,15 +231,15 @@ class DatabaseSeeder extends Seeder
             // Give each student a performance profile (excellent, good, average, struggling)
             $performanceProfile = ['excellent', 'good', 'average', 'struggling'][rand(0, 3)];
             $gradeRanges = [
-                'excellent' => [85, 100],
-                'good' => [70, 90],
-                'average' => [60, 80],
-                'struggling' => [50, 70],
+                'excellent' => [17, 20],
+                'good' => [14, 18],
+                'average' => [12, 16],
+                'struggling' => [10, 14],
             ];
             
             foreach ($classSubjects as $subject) {
-                // Some variation per subject (+/- 10 points)
-                $subjectModifier = rand(-10, 10);
+                // Some variation per subject (+/- 2 points)
+                $subjectModifier = rand(-2, 2);
                 
                 foreach ($terms as $term) {
                     // Create 3-5 grades per subject per term
@@ -248,11 +248,11 @@ class DatabaseSeeder extends Seeder
                     for ($g = 0; $g < $gradeCount; $g++) {
                         $baseRange = $gradeRanges[$performanceProfile];
                         $gradeValue = rand($baseRange[0], $baseRange[1]) + $subjectModifier;
-                        $gradeValue = max(50, min(100, $gradeValue)); // Keep within bounds
+                        $gradeValue = max(10, min(20, $gradeValue)); // Keep within bounds
                         
-                        $commentCategory = $gradeValue >= 85 ? 'excellent' : 
-                                         ($gradeValue >= 70 ? 'good' : 
-                                         ($gradeValue >= 60 ? 'average' : 'poor'));
+                        $commentCategory = $gradeValue >= 17 ? 'excellent' : 
+                                         ($gradeValue >= 14 ? 'good' : 
+                                         ($gradeValue >= 12 ? 'average' : 'poor'));
                         
                         Grade::create([
                             'student_id' => $student->id,
@@ -260,7 +260,7 @@ class DatabaseSeeder extends Seeder
                             'class_id' => $studentClass->id,
                             'teacher_id' => $subject->pivot->teacher_id,
                             'value' => $gradeValue,
-                            'max_value' => 100,
+                            'max_value' => 20,
                             'type' => $gradeTypes[array_rand($gradeTypes)],
                             'title' => ucfirst($gradeTypes[array_rand($gradeTypes)]) . " " . ($g + 1),
                             'grade_date' => now()->subDays(rand(1, 90)),

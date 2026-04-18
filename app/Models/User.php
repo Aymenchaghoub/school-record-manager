@@ -176,7 +176,7 @@ class User extends Authenticatable
      */
     public function responsibleClasses()
     {
-        return $this->hasMany(ClassModel::class, 'responsible_teacher_id');
+        return $this->hasMany(ClassModel::class, 'teacher_id');
     }
 
     /**
