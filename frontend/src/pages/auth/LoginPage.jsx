@@ -17,6 +17,21 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const appEnv = String(
+    import.meta.env.VITE_APP_ENV ||
+    import.meta.env.APP_ENV ||
+    import.meta.env.MODE ||
+    'development'
+  ).toLowerCase();
+
+  const showQuickLogin = appEnv !== 'production';
+  const quickAccessAccounts = [
+    { label: 'Admin', email: 'admin@school.com' },
+    { label: 'Enseignant', email: 'teacher@school.com' },
+    { label: 'Eleve', email: 'student@school.com' },
+    { label: 'Parent', email: 'parent@school.com' },
+  ];
+
   useEffect(() => {
     if (isAuthenticated && user) {
       navigate('/dashboard', { replace: true });
@@ -43,6 +58,13 @@ export function LoginPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const applyQuickLogin = (nextEmail) => {
+    setEmail(nextEmail);
+    setPassword('password');
+    setRemember(true);
+    setError('');
   };
 
   return (
@@ -86,6 +108,42 @@ export function LoginPage() {
         </div>
 
         {error ? <Alert variant="danger">{error}</Alert> : null}
+
+        {showQuickLogin ? (
+          <div
+            className="mt-4"
+            style={{
+              borderRadius: '12px',
+              border: '1px dashed var(--color-border)',
+              padding: '12px',
+            }}
+          >
+            <p
+              className="mb-2 text-xs font-semibold uppercase tracking-[0.12em]"
+              style={{ color: 'var(--color-muted)' }}
+            >
+              Connexion rapide
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              {quickAccessAccounts.map((account) => (
+                <Button
+                  key={account.label}
+                  type="button"
+                  variant="subtle"
+                  className="w-full text-sm"
+                  onClick={() => applyQuickLogin(account.email)}
+                >
+                  {account.label}
+                </Button>
+              ))}
+            </div>
+
+            <p className="mt-2 text-xs" style={{ color: 'var(--color-muted)' }}>
+              Mot de passe pre-rempli: password
+            </p>
+          </div>
+        ) : null}
 
         <form className="mt-4 space-y-4" onSubmit={submit}>
           <Input
