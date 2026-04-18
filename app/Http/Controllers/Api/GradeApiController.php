@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\GradeCreated;
 use App\Http\Controllers\Api\Concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Grades\StoreGradeRequest;
@@ -89,6 +90,9 @@ class GradeApiController extends Controller
         $payload = $this->normalizePayload($validated, $request->user(), false);
 
         $grade = $this->gradeService->create($payload);
+        $grade->load(['student:id,name,email', 'subject:id,name,code', 'class:id,name,code', 'teacher:id,name,email']);
+
+        event(new GradeCreated($grade));
 
         ActivityLogger::grade('created', (int) $request->user()->id, [
             'grade_id' => $grade->id,
@@ -97,7 +101,7 @@ class GradeApiController extends Controller
         ]);
 
         return $this->success(
-            $grade->load(['student:id,name,email', 'subject:id,name,code', 'class:id,name,code', 'teacher:id,name,email']),
+            $grade,
             'Grade created successfully.',
             201
         );
