@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import CalendarView from '../../components/common/CalendarView';
 import { CrudPage } from '../../components/common/CrudPage';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../hooks/useAuth';
 import FR from '../../i18n/fr';
 import apiClient from '../../services/apiClient';
@@ -55,6 +58,43 @@ function resolveAbsenceStatus(item) {
   return { label: 'Non justifiee', tone: 'danger' };
 }
 
+function resolveAbsenceCalendarColor(item) {
+  if (item?.is_justified === true) {
+    return '#22C55E';
+  }
+
+  if (item?.is_justified === false) {
+    return '#EF4444';
+  }
+
+  return '#F59E0B';
+}
+
+function formatDateValue(value) {
+  if (!value) {
+    return '-';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+
+  return parsed.toLocaleDateString('fr-FR');
+}
+
+function resolveStudentDisplayName(item) {
+  const firstName = String(item?.student?.first_name || '').trim();
+  const lastName = String(item?.student?.last_name || '').trim();
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  if (fullName !== '') {
+    return fullName;
+  }
+
+  return item?.student?.name || item?.student_name || 'Eleve';
+}
+
 export function AbsencesPage() {
   const { user } = useAuth();
   const role = user?.role;
@@ -63,6 +103,11 @@ export function AbsencesPage() {
   const [subjectFieldOptions, setSubjectFieldOptions] = useState([{ value: '', label: 'Selectionner une matiere' }]);
   const [teacherFieldOptions, setTeacherFieldOptions] = useState([{ value: '', label: 'Selectionner un enseignant' }]);
   const [classFilterOptions, setClassFilterOptions] = useState([{ value: '', label: 'Toutes les classes' }]);
+  const [viewMode, setViewMode] = useState('table');
+  const [calendarItems, setCalendarItems] = useState([]);
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState('');
+  const [selectedCalendarAbsence, setSelectedCalendarAbsence] = useState(null);
 
   const service = useMemo(
     () => createAbsencesService(role || ROLES.ADMIN),
@@ -70,6 +115,64 @@ export function AbsencesPage() {
   );
 
   const canMutate = role === ROLES.ADMIN || role === ROLES.TEACHER;
+
+  const loadCalendarItems = useCallback(async () => {
+    setIsCalendarLoading(true);
+    setCalendarError('');
+
+    try {
+      const payload = await service.list({ page: 1, per_page: 500 });
+      const items = parseListResponse(payload?.data || payload).items;
+      setCalendarItems(items);
+    } catch (error) {
+      setCalendarError(error?.message || 'Impossible de charger les absences pour le calendrier.');
+    } finally {
+      setIsCalendarLoading(false);
+    }
+  }, [service]);
+
+  useEffect(() => {
+    if (viewMode !== 'calendar') {
+      return;
+    }
+
+    loadCalendarItems();
+  }, [viewMode, loadCalendarItems]);
+
+  const calendarAbsences = useMemo(
+    () => calendarItems.map((absence) => {
+      const studentName = resolveStudentDisplayName(absence);
+      const subjectName = absence.subject?.name ?? 'Non precise';
+
+      return {
+        id: absence.id,
+        title: `${studentName} - ${subjectName}`,
+        start: absence.absence_date,
+        allDay: true,
+        color: resolveAbsenceCalendarColor(absence),
+        extendedProps: {
+          student: studentName,
+          subject: subjectName,
+          className: absence.class?.name || absence.class_name || '-',
+          reason: absence.reason || '-',
+          type: absence.type || '-',
+          justified: absence.is_justified,
+        },
+      };
+    }),
+    [calendarItems]
+  );
+
+  const handleCalendarEventClick = useCallback((clickInfo) => {
+    const { event } = clickInfo;
+
+    setSelectedCalendarAbsence({
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      ...event.extendedProps,
+    });
+  }, []);
 
   useEffect(() => {
     if (!canMutate) {
@@ -271,80 +374,152 @@ export function AbsencesPage() {
   }, []);
 
   return (
-    <CrudPage
-      title="Absences"
-      description="Suivi de presence et justification"
-      service={service}
-      createLabel="Nouvelle absence"
-      canCreate={canMutate}
-      canEdit={canMutate}
-      canDelete={canMutate}
-      filters={absenceFilters}
-      buildListParams={buildAbsenceListParams}
-      includeFiltersInRequest={false}
-      onListLoaded={handleListLoaded}
-      applyClientFilters={applyClientFilters}
-      columns={[
-        {
-          key: 'student_name',
-          label: FR.tables.absences.student,
-          render: (item) => item.student?.name || item.student_name || item.student_id || '-',
-        },
-        {
-          key: 'class_name',
-          label: FR.tables.absences.class,
-          render: (item) => item.class?.name || item.class_name || item.class_id || '-',
-        },
-        {
-          key: 'type',
-          label: FR.tables.absences.type,
-          render: (item) => <Badge tone="brand">{item.type || '-'}</Badge>,
-        },
-        { key: 'absence_date', label: FR.tables.absences.date, format: 'date' },
-        {
-          key: 'is_justified',
-          label: FR.tables.absences.justified,
-          render: (item) => {
-            const status = resolveAbsenceStatus(item);
+    <div className="space-y-4">
+      <div className="surface-card flex flex-wrap items-center justify-between gap-3 p-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'table' ? 'primary' : 'secondary'}
+            onClick={() => setViewMode('table')}
+          >
+            Tableau
+          </Button>
+          <Button
+            variant={viewMode === 'calendar' ? 'primary' : 'secondary'}
+            onClick={() => setViewMode('calendar')}
+          >
+            Calendrier
+          </Button>
+        </div>
 
-            return <Badge tone={status.tone}>{status.label}</Badge>;
-          },
-        },
-        { key: 'reason', label: FR.tables.absences.reason },
-      ]}
-      fields={[
-        { name: 'student_id', label: 'Eleve', type: 'select', required: true, options: studentFieldOptions },
-        { name: 'class_id', label: 'Classe', type: 'select', required: true, options: classFieldOptions },
-        { name: 'subject_id', label: 'Matiere', type: 'select', options: subjectFieldOptions },
-        { name: 'recorded_by', label: 'Enseignant', type: 'select', options: teacherFieldOptions },
-        { name: 'absence_date', label: 'Date absence', type: 'date', required: true },
-        { name: 'start_time', label: 'Heure debut', type: 'time' },
-        { name: 'end_time', label: 'Heure fin', type: 'time' },
-        { name: 'type', label: 'Type', type: 'select', required: true, options: absenceTypeOptions },
-        { name: 'reason', label: 'Motif' },
-        { name: 'justification', label: 'Justification', type: 'textarea' },
-        { name: 'is_justified', label: 'Absence justifiee', type: 'checkbox', defaultValue: false },
-      ]}
-      mapItemToForm={(item) => ({
-        ...item,
-        student_id: String(item.student_id || item.student?.id || ''),
-        class_id: String(item.class_id || item.class?.id || ''),
-        subject_id: String(item.subject_id || item.subject?.id || ''),
-        recorded_by: String(item.recorded_by || item.recordedBy?.id || ''),
-      })}
-      mapFormToPayload={(values) => ({
-        ...values,
-        student_id: Number(values.student_id),
-        class_id: Number(values.class_id),
-        subject_id: values.subject_id ? Number(values.subject_id) : null,
-        recorded_by: values.recorded_by ? Number(values.recorded_by) : null,
-        is_justified: Boolean(values.is_justified),
-      })}
-      emptyState={{
-        title: 'Aucune absence enregistree',
-        description: 'Suivez les absences pour maintenir un historique de presence fiable.',
-        actionLabel: 'Ajouter une absence',
-      }}
-    />
+        {viewMode === 'calendar' ? (
+          <Button variant="secondary" onClick={loadCalendarItems}>
+            Rafraichir
+          </Button>
+        ) : null}
+      </div>
+
+      {viewMode === 'table' ? (
+        <CrudPage
+          title="Absences"
+          description="Suivi de presence et justification"
+          service={service}
+          createLabel="Nouvelle absence"
+          canCreate={canMutate}
+          canEdit={canMutate}
+          canDelete={canMutate}
+          filters={absenceFilters}
+          buildListParams={buildAbsenceListParams}
+          includeFiltersInRequest={false}
+          onListLoaded={handleListLoaded}
+          applyClientFilters={applyClientFilters}
+          columns={[
+            {
+              key: 'student_name',
+              label: FR.tables.absences.student,
+              render: (item) => item.student?.name || item.student_name || item.student_id || '-',
+            },
+            {
+              key: 'class_name',
+              label: FR.tables.absences.class,
+              render: (item) => item.class?.name || item.class_name || item.class_id || '-',
+            },
+            {
+              key: 'type',
+              label: FR.tables.absences.type,
+              render: (item) => <Badge tone="brand">{item.type || '-'}</Badge>,
+            },
+            { key: 'absence_date', label: FR.tables.absences.date, format: 'date' },
+            {
+              key: 'is_justified',
+              label: FR.tables.absences.justified,
+              render: (item) => {
+                const status = resolveAbsenceStatus(item);
+
+                return <Badge tone={status.tone}>{status.label}</Badge>;
+              },
+            },
+            { key: 'reason', label: FR.tables.absences.reason },
+          ]}
+          fields={[
+            { name: 'student_id', label: 'Eleve', type: 'select', required: true, options: studentFieldOptions },
+            { name: 'class_id', label: 'Classe', type: 'select', required: true, options: classFieldOptions },
+            { name: 'subject_id', label: 'Matiere', type: 'select', options: subjectFieldOptions },
+            { name: 'recorded_by', label: 'Enseignant', type: 'select', options: teacherFieldOptions },
+            { name: 'absence_date', label: 'Date absence', type: 'date', required: true },
+            { name: 'start_time', label: 'Heure debut', type: 'time' },
+            { name: 'end_time', label: 'Heure fin', type: 'time' },
+            { name: 'type', label: 'Type', type: 'select', required: true, options: absenceTypeOptions },
+            { name: 'reason', label: 'Motif' },
+            { name: 'justification', label: 'Justification', type: 'textarea' },
+            { name: 'is_justified', label: 'Absence justifiee', type: 'checkbox', defaultValue: false },
+          ]}
+          mapItemToForm={(item) => ({
+            ...item,
+            student_id: String(item.student_id || item.student?.id || ''),
+            class_id: String(item.class_id || item.class?.id || ''),
+            subject_id: String(item.subject_id || item.subject?.id || ''),
+            recorded_by: String(item.recorded_by || item.recordedBy?.id || ''),
+          })}
+          mapFormToPayload={(values) => ({
+            ...values,
+            student_id: Number(values.student_id),
+            class_id: Number(values.class_id),
+            subject_id: values.subject_id ? Number(values.subject_id) : null,
+            recorded_by: values.recorded_by ? Number(values.recorded_by) : null,
+            is_justified: Boolean(values.is_justified),
+          })}
+          emptyState={{
+            title: 'Aucune absence enregistree',
+            description: 'Suivez les absences pour maintenir un historique de presence fiable.',
+            actionLabel: 'Ajouter une absence',
+          }}
+        />
+      ) : (
+        <>
+          {calendarError ? (
+            <div className="surface-card p-4" style={{ color: '#dc2626' }}>
+              {calendarError}
+            </div>
+          ) : null}
+
+          {isCalendarLoading ? (
+            <div className="surface-card p-6" style={{ color: 'var(--color-muted)', fontSize: '14px' }}>
+              Chargement du calendrier...
+            </div>
+          ) : (
+            <CalendarView events={calendarAbsences} onEventClick={handleCalendarEventClick} />
+          )}
+
+          <Modal
+            title={selectedCalendarAbsence?.title || 'Absence'}
+            isOpen={Boolean(selectedCalendarAbsence)}
+            onClose={() => setSelectedCalendarAbsence(null)}
+            footer={
+              <div className="flex justify-end">
+                <Button variant="secondary" onClick={() => setSelectedCalendarAbsence(null)}>
+                  Fermer
+                </Button>
+              </div>
+            }
+          >
+            <div className="space-y-2 text-sm" style={{ color: 'var(--color-text)' }}>
+              <p><strong>Eleve:</strong> {selectedCalendarAbsence?.student || '-'}</p>
+              <p><strong>Matiere:</strong> {selectedCalendarAbsence?.subject || '-'}</p>
+              <p><strong>Classe:</strong> {selectedCalendarAbsence?.className || '-'}</p>
+              <p><strong>Date:</strong> {formatDateValue(selectedCalendarAbsence?.start)}</p>
+              <p><strong>Type:</strong> {selectedCalendarAbsence?.type || '-'}</p>
+              <p>
+                <strong>Statut:</strong> {selectedCalendarAbsence?.justified === true
+                  ? 'Justifiee'
+                  : selectedCalendarAbsence?.justified === false
+                    ? 'Non justifiee'
+                    : 'En attente'}
+              </p>
+              <p><strong>Motif:</strong> {selectedCalendarAbsence?.reason || '-'}</p>
+            </div>
+          </Modal>
+        </>
+      )}
+    </div>
   );
 }
