@@ -31,6 +31,11 @@ class GradeCreated implements ShouldBroadcastNow
         return 'grade.created';
     }
 
+    public function broadcastWhen(): bool
+    {
+        return !app()->environment('testing');
+    }
+
     public function broadcastWith(): array
     {
         $grade = $this->grade->loadMissing([

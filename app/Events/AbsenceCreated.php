@@ -50,6 +50,11 @@ class AbsenceCreated implements ShouldBroadcastNow
         return 'absence.created';
     }
 
+    public function broadcastWhen(): bool
+    {
+        return !app()->environment('testing');
+    }
+
     public function broadcastWith(): array
     {
         $absence = $this->absence->loadMissing([
