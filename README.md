@@ -34,6 +34,7 @@ cd frontend && npm run dev
 4. Set `APP_URL` to your Railway public backend URL.
 5. Set `FRONTEND_URL` and `SANCTUM_STATEFUL_DOMAINS` with your Vercel frontend domain and backend domain.
 6. Run migrations once in Railway shell:
+7. Use `RAILWAY_VARIABLES.md` as the production variable checklist to avoid HTTP 500 due to placeholders.
 
 ```bash
 php artisan migrate --force
